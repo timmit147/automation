@@ -1,66 +1,24 @@
 {
-  "affiliate_tag": "tim2103-20",
-  "store": "amazon.nl",
   "products": [
     {
       "name": "Razer Viper V3 HyperSpeed",
-      "category": "mouse",
-      "focus": "gaming and productivity",
-      "affiliate_url": "https://www.amazon.nl/Razer-Viper-HyperSpeed-Muisschakelaars-Scansnelheid/dp/B0CBCPB2T1?tag=tim2103-20&linkCode=ogi"
+      "link": "https://www.amazon.nl/dp/B0CBCPB2T1?tag=tim2103-20&linkCode=ogi"
     },
     {
-      "name": "Logitech MX Master 3S",
-      "category": "mouse",
-      "focus": "productivity and office",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_2?tag=tim2103-20&linkCode=ogi"
+      "name": "Logitech MX Master 3S Wireless Mouse",
+      "link": "https://www.amazon.nl/dp/B09HK6FQDT?tag=tim2103-20&linkCode=ogi"
     },
     {
-      "name": "Logitech MK345 Wireless Combo",
-      "category": "keyboard_mouse_combo",
-      "focus": "home office",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_3?tag=tim2103-20&linkCode=ogi"
+      "name": "Anker 20000mAh Power Bank Fast Charging",
+      "link": "https://www.amazon.nl/dp/B0BWJ87T9P?tag=tim2103-20&linkCode=ogi"
     },
     {
-      "name": "Amazon Basics Laptop Stand",
-      "category": "laptop_stand",
-      "focus": "ergonomic desk setup",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_4?tag=tim2103-20&linkCode=ogi"
+      "name": "UGREEN Laptop Stand Adjustable Aluminum",
+      "link": "https://www.amazon.nl/dp/B0CNXDLJQ5?tag=tim2103-20&linkCode=ogi"
     },
     {
-      "name": "UGREEN Laptop Stand",
-      "category": "laptop_stand",
-      "focus": "portable workstation",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_5?tag=tim2103-20&linkCode=ogi"
-    },
-    {
-      "name": "Anker PowerConf C200",
-      "category": "webcam",
-      "focus": "remote work and meetings",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_6?tag=tim2103-20&linkCode=ogi"
-    },
-    {
-      "name": "Elgato Facecam Neo",
-      "category": "webcam",
-      "focus": "content creation and calls",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_7?tag=tim2103-20&linkCode=ogi"
-    },
-    {
-      "name": "Anker 323 Power Bank",
-      "category": "power_bank",
-      "focus": "portable charging",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_8?tag=tim2103-20&linkCode=ogi"
-    },
-    {
-      "name": "Briloner Desk Lamp",
-      "category": "desk_lamp",
-      "focus": "study lighting",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_9?tag=tim2103-20&linkCode=ogi"
-    },
-    {
-      "name": "GRIFEMA Laptop Stand",
-      "category": "laptop_stand",
-      "focus": "budget ergonomic setup",
-      "affiliate_url": "https://www.amazon.nl/dp/PASTE_ASIN_10?tag=tim2103-20&linkCode=ogi"
+      "name": "Logitech MK345 Wireless Keyboard and Mouse Combo",
+      "link": "https://www.amazon.nl/dp/B00S67M430?tag=tim2103-20&linkCode=ogi"
     }
   ]
 }

@@ -23,8 +23,10 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          # Get next page number
-          LAST_PAGE=$(ls -d page* 2>/dev/null | sed 's/page//' | sort -n | tail -n 1)
+          set -e
+
+          # Find next page number
+          LAST_PAGE=$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1)
 
           if [ -z "$LAST_PAGE" ]; then
             NEXT_PAGE=1
@@ -33,38 +35,36 @@ jobs:
           fi
 
           echo "Creating page$NEXT_PAGE"
-          mkdir -p page$NEXT_PAGE
+          mkdir -p "page$NEXT_PAGE"
 
-          # Strong prompt (forces HTML only)
-          PROMPT="Return ONLY raw HTML. No markdown, no explanation. Create a full valid HTML5 page with <html>, <head>, and <body>. Topic: a useful everyday subject."
-
-          echo "Calling Gemini API..."
+          PROMPT='Return ONLY raw HTML. No markdown, no explanation. Create a full valid HTML5 page with <html>, <head>, and <body>. Topic: a useful everyday subject.'
 
           RESPONSE=$(curl -s \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"contents\": [{
-                \"parts\": [{
-                  \"text\": \"$PROMPT\"
-                }]
-              }]
-            }" \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY")
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            -d "$(jq -n --arg text "$PROMPT" '{
+              contents: [
+                {
+                  parts: [
+                    { text: $text }
+                  ]
+                }
+              ]
+            }')" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
 
           echo "Raw API response:"
           echo "$RESPONSE"
 
-          # Extract HTML safely
           HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
-          # Fallback if API fails
           if [ -z "$HTML" ]; then
             echo "Gemini failed, using fallback HTML"
-            HTML="<!DOCTYPE html><html><body><h1>Error generating content</h1></body></html>"
+            HTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Error</title></head><body><h1>Error generating content</h1></body></html>'
           fi
 
-          # Save file
-          echo "$HTML" > page$NEXT_PAGE/index.html
+          printf '%s\n' "$HTML" > "page$NEXT_PAGE/index.html"
 
       - name: Commit and push
         run: |

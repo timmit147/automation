@@ -1,4 +1,4 @@
-name: AI Keyword Pages Stable
+name: AI Money Keyword Pages
 
 on:
   schedule:
@@ -19,31 +19,31 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate AI page
+      - name: Generate money keyword + page
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -e
 
-          # -----------------------------
-          # Get page number
-          # -----------------------------
+          # -------------------------
+          # Page numbering
+          # -------------------------
           LAST=$(ls -d page* 2>/dev/null | sed 's/page//' | sort -n | tail -n 1)
           if [ -z "$LAST" ]; then NEXT=1; else NEXT=$((LAST+1)); fi
 
           mkdir -p page$NEXT
 
-          echo "Generating keywords..."
+          echo "Generating MONEY keywords..."
 
-          # -----------------------------
-          # STEP 1: GET KEYWORDS
-          # -----------------------------
+          # -------------------------
+          # STEP 1: MONEY KEYWORDS
+          # -------------------------
           KEYWORD_RESPONSE=$(curl -s \
             -H "Content-Type: application/json" \
             -d "{
               \"contents\": [{
                 \"parts\": [{
-                  \"text\": \"Return 5 SEO keywords separated ONLY by commas. No explanation. Example: coffee tips, travel hacks, money saving ideas, tech gadgets, productivity tips\"
+                  \"text\": \"Generate 5 HIGH INTENT MONEY SEO keywords. Rules: must be low competition, specific, contain buyer intent (best, cheap, free, tools, under, for students, for freelancers). Focus on AI, money saving, productivity, side income, tech tools. Return ONLY comma-separated keywords.\"
                 }]
               }]
             }" \
@@ -52,33 +52,28 @@ jobs:
           echo "Raw keyword response:"
           echo "$KEYWORD_RESPONSE"
 
-          # Extract keywords safely
           KEYWORDS=$(echo "$KEYWORD_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
-          # -----------------------------
-          # FALLBACK if empty
-          # -----------------------------
+          # fallback keywords (VERY IMPORTANT)
           if [ -z "$KEYWORDS" ]; then
-            echo "Keyword generation failed, using fallback"
-            KEYWORDS="coffee brewing tips, money saving tips, travel hacks, tech gadgets, productivity tips"
+            KEYWORDS="best free ai tools for students, cheap ai productivity tools under 10 euro, ai resume builder free europe, how to save time using ai tools, best side hustle tools with ai"
           fi
 
           echo "Keywords: $KEYWORDS"
 
-          # Pick first keyword
+          # pick first keyword
           KEYWORD=$(echo "$KEYWORDS" | cut -d',' -f1 | xargs)
 
-          # Final fallback safety
           if [ -z "$KEYWORD" ]; then
-            KEYWORD="coffee brewing tips"
+            KEYWORD="best free ai tools for students"
           fi
 
           echo "Selected keyword: $KEYWORD"
 
-          # -----------------------------
+          # -------------------------
           # STEP 2: GENERATE PAGE
-          # -----------------------------
-          PROMPT="Return ONLY valid HTML. No markdown, no explanation. Create a full SEO-friendly webpage about: $KEYWORD"
+          # -------------------------
+          PROMPT="Return ONLY valid HTML. No markdown. No explanation. Create a highly useful SEO page targeting this keyword: '$KEYWORD'. Include headings, tips, and practical advice. Make it feel like a real blog post."
 
           PAGE_RESPONSE=$(curl -s \
             -H "Content-Type: application/json" \
@@ -91,19 +86,12 @@ jobs:
             }" \
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY")
 
-          echo "Raw page response:"
-          echo "$PAGE_RESPONSE"
-
           HTML=$(echo "$PAGE_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
-          # -----------------------------
-          # FINAL FALLBACK
-          # -----------------------------
           if [ -z "$HTML" ]; then
             HTML="<!DOCTYPE html><html><body><h1>Generation failed</h1><p>$KEYWORD</p></body></html>"
           fi
 
-          # Save page
           echo "$HTML" > page$NEXT/index.html
 
       - name: Commit and push
@@ -111,5 +99,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "AI page $(date)" || echo "No changes"
+          git commit -m "Money page $(date)" || echo "No changes"
           git push origin HEAD:main

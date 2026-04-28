@@ -1,4 +1,4 @@
-name: AI Money Keyword Pages
+name: AI SEO Site Generator
 
 on:
   schedule:
@@ -19,68 +19,57 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate money keyword + page
+      - name: Generate page + index
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -e
 
-          # -------------------------
-          # Page numbering
-          # -------------------------
+          echo "Finding next page number..."
+
           LAST=$(ls -d page* 2>/dev/null | sed 's/page//' | sort -n | tail -n 1)
           if [ -z "$LAST" ]; then NEXT=1; else NEXT=$((LAST+1)); fi
 
+          echo "Creating page $NEXT"
           mkdir -p page$NEXT
 
-          echo "Generating MONEY keywords..."
-
-          # -------------------------
-          # STEP 1: MONEY KEYWORDS
-          # -------------------------
+          # -----------------------------
+          # 1. Generate MONEY keyword
+          # -----------------------------
           KEYWORD_RESPONSE=$(curl -s \
             -H "Content-Type: application/json" \
             -d "{
               \"contents\": [{
                 \"parts\": [{
-                  \"text\": \"Generate 5 HIGH INTENT MONEY SEO keywords. Rules: must be low competition, specific, contain buyer intent (best, cheap, free, tools, under, for students, for freelancers). Focus on AI, money saving, productivity, side income, tech tools. Return ONLY comma-separated keywords.\"
+                  \"text\": \"Generate 5 high-intent SEO money keywords. Must be specific, low competition, include words like: best, free, cheap, for students, for freelancers, under 10 euro. Return comma-separated only.\"
                 }]
               }]
             }" \
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY")
 
-          echo "Raw keyword response:"
-          echo "$KEYWORD_RESPONSE"
-
           KEYWORDS=$(echo "$KEYWORD_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
-          # fallback keywords (VERY IMPORTANT)
           if [ -z "$KEYWORDS" ]; then
-            KEYWORDS="best free ai tools for students, cheap ai productivity tools under 10 euro, ai resume builder free europe, how to save time using ai tools, best side hustle tools with ai"
+            KEYWORDS="best free ai tools for students, cheap productivity tools under 10 euro, ai resume builder free europe, how to save money using ai, best side hustle tools"
           fi
 
-          echo "Keywords: $KEYWORDS"
-
-          # pick first keyword
           KEYWORD=$(echo "$KEYWORDS" | cut -d',' -f1 | xargs)
 
           if [ -z "$KEYWORD" ]; then
             KEYWORD="best free ai tools for students"
           fi
 
-          echo "Selected keyword: $KEYWORD"
+          echo "Keyword: $KEYWORD"
 
-          # -------------------------
-          # STEP 2: GENERATE PAGE
-          # -------------------------
-          PROMPT="Return ONLY valid HTML. No markdown. No explanation. Create a highly useful SEO page targeting this keyword: '$KEYWORD'. Include headings, tips, and practical advice. Make it feel like a real blog post."
-
+          # -----------------------------
+          # 2. Generate HTML page
+          # -----------------------------
           PAGE_RESPONSE=$(curl -s \
             -H "Content-Type: application/json" \
             -d "{
               \"contents\": [{
                 \"parts\": [{
-                  \"text\": \"$PROMPT\"
+                  \"text\": \"Return ONLY valid HTML. No markdown. Create an SEO blog post about: '$KEYWORD'. Include headings, tips, and a section called 'Recommended Tools'.\"
                 }]
               }]
             }" \
@@ -94,10 +83,37 @@ jobs:
 
           echo "$HTML" > page$NEXT/index.html
 
+          # -----------------------------
+          # 3. Generate INDEX.HTML
+          # -----------------------------
+          echo "Building index.html..."
+
+          echo "<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <title>AI SEO Blog</title>
+</head>
+<body>
+  <h1>AI Generated SEO Pages</h1>
+  <p>Automatically generated content hub</p>
+  <ul>" > index.html
+
+          for dir in page*; do
+            if [ -d "$dir" ]; then
+              TITLE=$(grep -o '<title>[^<]*' $dir/index.html 2>/dev/null | head -1 | sed 's/<title>//' || echo $dir)
+              echo "<li><a href=\"$dir/\">$TITLE</a></li>" >> index.html
+            fi
+          done
+
+          echo "</ul>
+</body>
+</html>" >> index.html
+
       - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Money page $(date)" || echo "No changes"
+          git commit -m "AI SEO update $(date)" || echo "No changes"
           git push origin HEAD:main

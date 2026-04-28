@@ -1,3 +1,504 @@
 {
-  "products": []
+  "products": [
+    {
+      "name": "Logitech MX Master 3S Wireless Mouse",
+      "link": "https://www.amazon.nl/dp/B09VHT6T74?tag=tim2103-20&linkCode=ogi",
+      "desc": "The gold standard for productivity mice, featuring silent clicks and an 8K DPI sensor."
+    },
+    {
+      "name": "SteelSeries Arctis Nova 7 Wireless",
+      "link": "https://www.amazon.nl/dp/B0B7X827S8?tag=tim2103-20&linkCode=ogi",
+      "desc": "Premium gaming headset with multi-platform support and simultaneous Bluetooth."
+    },
+    {
+      "name": "Kindle Paperwhite (16 GB)",
+      "link": "https://www.amazon.nl/dp/B09TMF67Y2?tag=tim2103-20&linkCode=ogi",
+      "desc": "The best e-reader on the market with a 6.8-inch display and adjustable warm light."
+    },
+    {
+      "name": "Sony WH-1000XM5 Noise Canceling Headphones",
+      "link": "https://www.amazon.nl/dp/B09Y2MYL61?tag=tim2103-20&linkCode=ogi",
+      "desc": "Industry-leading noise cancellation and exceptional call quality."
+    },
+    {
+      "name": "Apple AirPods Pro (2nd Generation)",
+      "link": "https://www.amazon.nl/dp/B0BDHWDR12?tag=tim2103-20&linkCode=ogi",
+      "desc": "The most popular earbuds for iPhone users with MagSafe Charging Case."
+    },
+    {
+      "name": "SAMSUNG T7 Shield 2TB Portable SSD",
+      "link": "https://www.amazon.nl/dp/B09VLK9W39?tag=tim2103-20&linkCode=ogi",
+      "desc": "Rugged, fast, and compact external storage for creators and professionals."
+    },
+    {
+      "name": "Anker 737 Power Bank (PowerCore 24K)",
+      "link": "https://www.amazon.nl/dp/B09VPHVT2Z?tag=tim2103-20&linkCode=ogi",
+      "desc": "Ultra-powerful portable charger with 140W output and a smart digital display."
+    },
+    {
+      "name": "Philips Hue Smart Bulb Starter Kit",
+      "link": "https://www.amazon.nl/dp/B0797W1637?tag=tim2103-20&linkCode=ogi",
+      "desc": "The most reliable smart lighting system to set the mood in any room."
+    },
+    {
+      "name": "COSORI Air Fryer 5.5L",
+      "link": "https://www.amazon.nl/dp/B07N8N6C85?tag=tim2103-20&linkCode=ogi",
+      "desc": "Top-rated air fryer with 11 presets and a non-stick basket for healthy cooking."
+    },
+    {
+      "name": "Instant Pot Duo 7-in-1 Smart Cooker",
+      "link": "https://www.amazon.nl/dp/B00OP26T4K?tag=tim2103-20&linkCode=ogi",
+      "desc": "Versatile pressure cooker that replaces 7 kitchen appliances."
+    },
+    {
+      "name": "Logitech C920s HD Pro Webcam",
+      "link": "https://www.amazon.nl/dp/B07K96JJ9B?tag=tim2103-20&linkCode=ogi",
+      "desc": "The classic choice for clear 1080p video calls and streaming."
+    },
+    {
+      "name": "Razer BlackWidow V4 Mechanical Keyboard",
+      "link": "https://www.amazon.nl/dp/B0BV977H9B?tag=tim2103-20&linkCode=ogi",
+      "desc": "Tactile and clicky gaming keyboard with immersive RGB lighting."
+    },
+    {
+      "name": "Tile Mate (2022) Bluetooth Tracker",
+      "link": "https://www.amazon.nl/dp/B0999786K1?tag=tim2103-20&linkCode=ogi",
+      "desc": "Easy-to-use tracker for keys, bags, or anything else you might lose."
+    },
+    {
+      "name": "Hydro Flask Wide Mouth Water Bottle",
+      "link": "https://www.amazon.nl/dp/B083W8YV9F?tag=tim2103-20&linkCode=ogi",
+      "desc": "Insulated stainless steel bottle that keeps drinks cold for 24 hours."
+    },
+    {
+      "name": "Ring Video Doorbell (2nd Gen)",
+      "link": "https://www.amazon.nl/dp/B08N5S6G8D?tag=tim2103-20&linkCode=ogi",
+      "desc": "Enhanced security with 1080p HD video and motion detection."
+    },
+    {
+      "name": "TP-Link Tapo Smart Plug (4-Pack)",
+      "link": "https://www.amazon.nl/dp/B0857K7Z2S?tag=tim2103-20&linkCode=ogi",
+      "desc": "Affordable and reliable smart plugs compatible with Alexa and Google Home."
+    },
+    {
+      "name": "Blue Yeti USB Microphone",
+      "link": "https://www.amazon.nl/dp/B00N1YPXW2?tag=tim2103-20&linkCode=ogi",
+      "desc": "The most popular microphone for podcasting and YouTube content creation."
+    },
+    {
+      "name": "Seagate Portable 2TB External Hard Drive",
+      "link": "https://www.amazon.nl/dp/B07CRG94G3?tag=tim2103-20&linkCode=ogi",
+      "desc": "Simple, plug-and-play storage expansion for PC and Mac."
+    },
+    {
+      "name": "Oral-B iO Series 6 Electric Toothbrush",
+      "link": "https://www.amazon.nl/dp/B09G3F19W4?tag=tim2103-20&linkCode=ogi",
+      "desc": "Advanced toothbrush with AI tracking and interactive display."
+    },
+    {
+      "name": "Fitbit Charge 6 Fitness Tracker",
+      "link": "https://www.amazon.nl/dp/B0C9R9K2S5?tag=tim2103-20&linkCode=ogi",
+      "desc": "Advanced fitness tracker with built-in GPS and heart rate monitoring."
+    },
+    {
+      "name": "Bose QuietComfort SC Headphones",
+      "link": "https://www.amazon.nl/dp/B0CH6S77R5?tag=tim2103-20&linkCode=ogi",
+      "desc": "Legendary noise cancelling headphones with soft cushions for all-day wear."
+    },
+    {
+      "name": "Belkin 3-in-1 Wireless Charging Station",
+      "link": "https://www.amazon.nl/dp/B08L7V89H6?tag=tim2103-20&linkCode=ogi",
+      "desc": "Charge your iPhone, Apple Watch, and AirPods all at once."
+    },
+    {
+      "name": "Elgato Stream Deck MK.2",
+      "link": "https://www.amazon.nl/dp/B09738CV2G?tag=tim2103-20&linkCode=ogi",
+      "desc": "15 macro keys for controlling apps and tools for streamers and pros."
+    },
+    {
+      "name": "Sony SRS-XB100 Portable Speaker",
+      "link": "https://www.amazon.nl/dp/B0C4M659F1?tag=tim2103-20&linkCode=ogi",
+      "desc": "Compact, waterproof Bluetooth speaker with surprisingly deep bass."
+    },
+    {
+      "name": "SanDisk 128GB Extreme microSDXC Card",
+      "link": "https://www.amazon.nl/dp/B07FCMKK5X?tag=tim2103-20&linkCode=ogi",
+      "desc": "High-speed storage for Nintendo Switch, cameras, and drones."
+    },
+    {
+      "name": "Nespresso Vertuo Pop Coffee Machine",
+      "link": "https://www.amazon.nl/dp/B0B8S6K35S?tag=tim2103-20&linkCode=ogi",
+      "desc": "Compact and colorful coffee maker for high-quality espresso."
+    },
+    {
+      "name": "Crucial P3 1TB M.2 NVMe SSD",
+      "link": "https://www.amazon.nl/dp/B0B25LZGGW?tag=tim2103-20&linkCode=ogi",
+      "desc": "Fast internal storage upgrade for laptops and desktops."
+    },
+    {
+      "name": "Philips OneBlade 360",
+      "link": "https://www.amazon.nl/dp/B0BYW3SBMN?tag=tim2103-20&linkCode=ogi",
+      "desc": "Hybrid styler to trim, edge, and shave any length of hair."
+    },
+    {
+      "name": "JBL Flip 6 Waterproof Speaker",
+      "link": "https://www.amazon.nl/dp/B09HGP93S5?tag=tim2103-20&linkCode=ogi",
+      "desc": "Powerful sound and deep bass in a rugged, portable design."
+    },
+    {
+      "name": "Ember Mug 2 (Temperature Control)",
+      "link": "https://www.amazon.nl/dp/B07W8M6CH9?tag=tim2103-20&linkCode=ogi",
+      "desc": "Smart mug that keeps your coffee at the perfect temperature."
+    },
+    {
+      "name": "Logitech G502 HERO Gaming Mouse",
+      "link": "https://www.amazon.nl/dp/B07GS6ZB7T?tag=tim2103-20&linkCode=ogi",
+      "desc": "High-performance wired mouse with 25K DPI sensor."
+    },
+    {
+      "name": "Wacom Intuos S Graphics Tablet",
+      "link": "https://www.amazon.nl/dp/B079N9DCH7?tag=tim2103-20&linkCode=ogi",
+      "desc": "The go-to choice for digital artists and photo editors."
+    },
+    {
+      "name": "Ninja Foodi 8-in-1 Flip Oven",
+      "link": "https://www.amazon.nl/dp/B089K8L696?tag=tim2103-20&linkCode=ogi",
+      "desc": "The air fry oven that flips up and away when not in use."
+    },
+    {
+      "name": "Tile Slim (2022) Wallet Tracker",
+      "link": "https://www.amazon.nl/dp/B09999M6M1?tag=tim2103-20&linkCode=ogi",
+      "desc": "Thin Bluetooth tracker that fits perfectly inside a credit card slot."
+    },
+    {
+      "name": "Anker Nano II 65W USB-C Charger",
+      "link": "https://www.amazon.nl/dp/B08YJLMQ63?tag=tim2103-20&linkCode=ogi",
+      "desc": "Ultra-compact charger for phones, tablets, and laptops."
+    },
+    {
+      "name": "Rode VideoMicro Compact On-Camera Mic",
+      "link": "https://www.amazon.nl/dp/B015R0IQGW?tag=tim2103-20&linkCode=ogi",
+      "desc": "Compact directional microphone for better audio on vlogs."
+    },
+    {
+      "name": "TP-Link Deco Mesh WiFi System",
+      "link": "https://www.amazon.nl/dp/B085P96SHT?tag=tim2103-20&linkCode=ogi",
+      "desc": "Eliminate dead zones with high-speed whole-home WiFi."
+    },
+    {
+      "name": "Waterpik Cordless Advanced Water Flosser",
+      "link": "https://www.amazon.nl/dp/B01L22W394?tag=tim2103-20&linkCode=ogi",
+      "desc": "The easiest and most effective way to floss."
+    },
+    {
+      "name": "Canon EOS M50 Mark II Content Creator Kit",
+      "link": "https://www.amazon.nl/dp/B08L5TGHJ2?tag=tim2103-20&linkCode=ogi",
+      "desc": "Perfect mirrorless camera for vloggers and enthusiasts."
+    },
+    {
+      "name": "AeroGarden Harvest",
+      "link": "https://www.amazon.nl/dp/B07R45S9Y7?tag=tim2103-20&linkCode=ogi",
+      "desc": "Grow fresh herbs and vegetables year-round indoors."
+    },
+    {
+      "name": "LIFX Color A19 Smart Bulb",
+      "link": "https://www.amazon.nl/dp/B07X9YF2M9?tag=tim2103-20&linkCode=ogi",
+      "desc": "Brilliant colors and deep dims with no hub required."
+    },
+    {
+      "name": "Soundcore by Anker Life P3 Earbuds",
+      "link": "https://www.amazon.nl/dp/B093S16STN?tag=tim2103-20&linkCode=ogi",
+      "desc": "Incredible noise cancelling and bass for the price."
+    },
+    {
+      "name": "WD Black 5TB P10 Game Drive",
+      "link": "https://www.amazon.nl/dp/B07VNTFHD5?tag=tim2103-20&linkCode=ogi",
+      "desc": "High-capacity storage for your PlayStation or Xbox game library."
+    },
+    {
+      "name": "Dyson V11 Absolute Cordless Vacuum",
+      "link": "https://www.amazon.nl/dp/B07R4X7Q9W?tag=tim2103-20&linkCode=ogi",
+      "desc": "Powerful suction and intelligent cleaning for all floor types."
+    },
+    {
+      "name": "Amazon Fire TV Stick 4K Max",
+      "link": "https://www.amazon.nl/dp/B08XW49T3R?tag=tim2103-20&linkCode=ogi",
+      "desc": "The most powerful streaming stick with Wi-Fi 6 support."
+    },
+    {
+      "name": "Google Nest Hub (2nd Gen)",
+      "link": "https://www.amazon.nl/dp/B08WHHLS9N?tag=tim2103-20&linkCode=ogi",
+      "desc": "The center of your smart home with sleep sensing."
+    },
+    {
+      "name": "HP Sprocket Portable Photo Printer",
+      "link": "https://www.amazon.nl/dp/B01LBWEMP4?tag=tim2103-20&linkCode=ogi",
+      "desc": "Instant 2x3 inch sticky-backed photos from your phone."
+    },
+    {
+      "name": "Razer Kiyo Pro Webcam",
+      "link": "https://www.amazon.nl/dp/B08T1S77S7?tag=tim2103-20&linkCode=ogi",
+      "desc": "Full HD webcam with high-performance adaptive light sensor."
+    },
+    {
+      "name": "Corsair Vengeance LPX 16GB RAM",
+      "link": "https://www.amazon.nl/dp/B0143UM4TC?tag=tim2103-20&linkCode=ogi",
+      "desc": "High-performance overclocking memory for PC builders."
+    },
+    {
+      "name": "Black+Decker Dustbuster Cordless Vacuum",
+      "link": "https://www.amazon.nl/dp/B006LXOJC0?tag=tim2103-20&linkCode=ogi",
+      "desc": "Handheld vacuum for quick cleanups around the house."
+    },
+    {
+      "name": "Fellow Stagg EKG Electric Kettle",
+      "link": "https://www.amazon.nl/dp/B077JBQZPX?tag=tim2103-20&linkCode=ogi",
+      "desc": "Precision pour-over kettle for serious coffee lovers."
+    },
+    {
+      "name": "Sennheiser HD 600 Open Back Headphones",
+      "link": "https://www.amazon.nl/dp/B00004SY4H?tag=tim2103-20&linkCode=ogi",
+      "desc": "Audiophile standard for natural, open sound."
+    },
+    {
+      "name": "Steam Deck OLED (512GB)",
+      "link": "https://www.amazon.nl/dp/B0CM9S1L8H?tag=tim2103-20&linkCode=ogi",
+      "desc": "The ultimate portable gaming PC with a stunning screen."
+    },
+    {
+      "name": "Sony Alpha a7 IV Mirrorless Camera",
+      "link": "https://www.amazon.nl/dp/B09JWC9S6B?tag=tim2103-20&linkCode=ogi",
+      "desc": "Professional-grade hybrid camera for stills and video."
+    },
+    {
+      "name": "Meta Quest 3 (128GB)",
+      "link": "https://www.amazon.nl/dp/B0C8VND37L?tag=tim2103-20&linkCode=ogi",
+      "desc": "Mixed reality headset for gaming, fitness, and more."
+    },
+    {
+      "name": "Shure SM7B Cardioid Dynamic Microphone",
+      "link": "https://www.amazon.nl/dp/B0002E4Z8M?tag=tim2103-20&linkCode=ogi",
+      "desc": "The legendary vocal microphone for studio use."
+    },
+    {
+      "name": "Nanoleaf Shapes Hexagons Starter Kit",
+      "link": "https://www.amazon.nl/dp/B08FF9BCS8?tag=tim2103-20&linkCode=ogi",
+      "desc": "Modular LED light panels that sync with music."
+    },
+    {
+      "name": "Bose SoundLink Flex Bluetooth Speaker",
+      "link": "https://www.amazon.nl/dp/B09B8WLY9D?tag=tim2103-20&linkCode=ogi",
+      "desc": "Rugged and waterproof speaker with astonishing sound."
+    },
+    {
+      "name": "Lodge Cast Iron Skillet (12-inch)",
+      "link": "https://www.amazon.nl/dp/B00006JSUB?tag=tim2103-20&linkCode=ogi",
+      "desc": "Pre-seasoned and ready to use for a lifetime of cooking."
+    },
+    {
+      "name": "Fujifilm Instax Mini 12 Instant Camera",
+      "link": "https://www.amazon.nl/dp/B0BX9NTVK6?tag=tim2103-20&linkCode=ogi",
+      "desc": "Fun and easy-to-use instant film camera."
+    },
+    {
+      "name": "SteelSeries Apex Pro TKL Keyboard",
+      "link": "https://www.amazon.nl/dp/B0B8S8M4R9?tag=tim2103-20&linkCode=ogi",
+      "desc": "Fastest mechanical keyboard with adjustable actuation."
+    },
+    {
+      "name": "Fitbit Inspire 3 Fitness Tracker",
+      "link": "https://www.amazon.nl/dp/B0B6TW1Z2X?tag=tim2103-20&linkCode=ogi",
+      "desc": "Affordable and slim tracker with 10 days of battery life."
+    },
+    {
+      "name": "Wyze Cam v3 Smart Security Camera",
+      "link": "https://www.amazon.nl/dp/B08R59YH7W?tag=tim2103-20&linkCode=ogi",
+      "desc": "Color night vision and weather resistance at a low price."
+    },
+    {
+      "name": "Withings Body+ Smart Scale",
+      "link": "https://www.amazon.nl/dp/B01N2T6P18?tag=tim2103-20&linkCode=ogi",
+      "desc": "Tracks weight, body fat, water, and bone mass."
+    },
+    {
+      "name": "Brita Marella Water Filter Jug",
+      "link": "https://www.amazon.nl/dp/B000YJVT6Q?tag=tim2103-20&linkCode=ogi",
+      "desc": "Reduces chlorine and limescale for great-tasting water."
+    },
+    {
+      "name": "YETI Rambler 20 oz Tumbler",
+      "link": "https://www.amazon.nl/dp/B01N7O29K7?tag=tim2103-20&linkCode=ogi",
+      "desc": "Durable travel mug that keeps drinks hot or cold."
+    },
+    {
+      "name": "KitchenAid Artisan 5KSM125 Stand Mixer",
+      "link": "https://www.amazon.nl/dp/B01LZZC121?tag=tim2103-20&linkCode=ogi",
+      "desc": "The iconic kitchen tool for bakers of all levels."
+    },
+    {
+      "name": "Crucial X8 2TB Portable SSD",
+      "link": "https://www.amazon.nl/dp/B08C3XVP2P?tag=tim2103-20&linkCode=ogi",
+      "desc": "Fast and durable external storage for all devices."
+    },
+    {
+      "name": "Tado Smart Radiator Thermostat",
+      "link": "https://www.amazon.nl/dp/B01L8F6992?tag=tim2103-20&linkCode=ogi",
+      "desc": "Save energy and control your heating room-by-room."
+    },
+    {
+      "name": "Sony ZV-1 Vlogging Camera",
+      "link": "https://www.amazon.nl/dp/B08966C6QD?tag=tim2103-20&linkCode=ogi",
+      "desc": "Designed specifically for vloggers with flip-out screen."
+    },
+    {
+      "name": "Logitech StreamCam",
+      "link": "https://www.amazon.nl/dp/B0849H29KC?tag=tim2103-20&linkCode=ogi",
+      "desc": "1080p 60fps webcam for high-quality streaming."
+    },
+    {
+      "name": "SteelSeries Rival 3 Wireless Mouse",
+      "link": "https://www.amazon.nl/dp/B08GBGZ1XF?tag=tim2103-20&linkCode=ogi",
+      "desc": "Long-lasting battery and great performance for gaming."
+    },
+    {
+      "name": "Samsung Galaxy Watch 6",
+      "link": "https://www.amazon.nl/dp/B0C79XRTJS?tag=tim2103-20&linkCode=ogi",
+      "desc": "Advanced health monitoring and sleek design for Android users."
+    },
+    {
+      "name": "DJI Mini 3 Pro Drone",
+      "link": "https://www.amazon.nl/dp/B09WDP6G5G?tag=tim2103-20&linkCode=ogi",
+      "desc": "Sub-249g drone with 4K HDR video and obstacle sensing."
+    },
+    {
+      "name": "Beats Studio Buds +",
+      "link": "https://www.amazon.nl/dp/B0C39M5S4P?tag=tim2103-20&linkCode=ogi",
+      "desc": "Powerful sound and active noise cancelling for iOS and Android."
+    },
+    {
+      "name": "Microsoft Surface Pro 9",
+      "link": "https://www.amazon.nl/dp/B0B9R28J8F?tag=tim2103-20&linkCode=ogi",
+      "desc": "The most versatile 2-in-1 laptop and tablet."
+    },
+    {
+      "name": "SodaStream Terra Sparkling Water Maker",
+      "link": "https://www.amazon.nl/dp/B096G6DRF9?tag=tim2103-20&linkCode=ogi",
+      "desc": "Turn plain water into sparkling water in seconds."
+    },
+    {
+      "name": "Keurig K-Elite Coffee Maker",
+      "link": "https://www.amazon.nl/dp/B079SSZ78N?tag=tim2103-20&linkCode=ogi",
+      "desc": "Strong brew and iced coffee settings for morning routines."
+    },
+    {
+      "name": "Tile Sticker (2022) 2-Pack",
+      "link": "https://www.amazon.nl/dp/B09998Z12Z?tag=tim2103-20&linkCode=ogi",
+      "desc": "Small, waterproof tracker that sticks to remotes and gadgets."
+    },
+    {
+      "name": "Marshall Emberton II Speaker",
+      "link": "https://www.amazon.nl/dp/B0B195ZJ7C?tag=tim2103-20&linkCode=ogi",
+      "desc": "Classic design with 30+ hours of portable playtime."
+    },
+    {
+      "name": "Apple Pencil (2nd Generation)",
+      "link": "https://www.amazon.nl/dp/B07K1WWBJK?tag=tim2103-20&linkCode=ogi",
+      "desc": "The essential tool for iPad Pro and iPad Air users."
+    },
+    {
+      "name": "Jabra Elite 8 Active Earbuds",
+      "link": "https://www.amazon.nl/dp/B0C7Z1K3D9?tag=tim2103-20&linkCode=ogi",
+      "desc": "The world's toughest earbuds for sports and fitness."
+    },
+    {
+      "name": "HyperX QuadCast S USB Mic",
+      "link": "https://www.amazon.nl/dp/B08G8WHKNW?tag=tim2103-20&linkCode=ogi",
+      "desc": "Stunning RGB lighting and clear audio for streaming."
+    },
+    {
+      "name": "Seagate FireCuda 530 2TB SSD",
+      "link": "https://www.amazon.nl/dp/B0977K2C6B?tag=tim2103-20&linkCode=ogi",
+      "desc": "Top-tier speed for PS5 and high-end PC builds."
+    },
+    {
+      "name": "Sony LinkBuds S Earbuds",
+      "link": "https://www.amazon.nl/dp/B0B1M93D45?tag=tim2103-20&linkCode=ogi",
+      "desc": "Small, lightweight noise cancelling earbuds for daily wear."
+    },
+    {
+      "name": "Shark Wandvac Handheld Vacuum",
+      "link": "https://www.amazon.nl/dp/B08HGY6H7T?tag=tim2103-20&linkCode=ogi",
+      "desc": "Sleek and powerful handheld vacuum for small messes."
+    },
+    {
+      "name": "Nanoleaf Essentials Matter Lightstrip",
+      "link": "https://www.amazon.nl/dp/B0BYLSBBSG?tag=tim2103-20&linkCode=ogi",
+      "desc": "Smart lighting that works across all major platforms."
+    },
+    {
+      "name": "Govee RGBIC LED Strip Lights",
+      "link": "https://www.amazon.nl/dp/B07N1C4Z65?tag=tim2103-20&linkCode=ogi",
+      "desc": "Segmented color control for immersive room lighting."
+    },
+    {
+      "name": "Anker 555 USB-C Hub (8-in-1)",
+      "link": "https://www.amazon.nl/dp/B09MF6V7VT?tag=tim2103-20&linkCode=ogi",
+      "desc": "Essential connectivity for modern thin laptops."
+    },
+    {
+      "name": "Leatherman Wave Plus Multitool",
+      "link": "https://www.amazon.nl/dp/B079MJBP21?tag=tim2103-20&linkCode=ogi",
+      "desc": "The ultimate everyday carry tool with 17 features."
+    },
+    {
+      "name": "Stanley Quencher H2.0 FlowState Tumbler",
+      "link": "https://www.amazon.nl/dp/B0B8KGDX4N?tag=tim2103-20&linkCode=ogi",
+      "desc": "The viral water bottle with incredible insulation."
+    },
+    {
+      "name": "Fitbit Sense 2 Health Smartwatch",
+      "link": "https://www.amazon.nl/dp/B0B6TMY64P?tag=tim2103-20&linkCode=ogi",
+      "desc": "Advanced stress tracking and heart health features."
+    },
+    {
+      "name": "August Wi-Fi Smart Lock (4th Gen)",
+      "link": "https://www.amazon.nl/dp/B086STV71K?tag=tim2103-20&linkCode=ogi",
+      "desc": "Control your door from anywhere without a hub."
+    },
+    {
+      "name": "NutriBullet 600W Personal Blender",
+      "link": "https://www.amazon.nl/dp/B007TIE0GQ?tag=tim2103-20&linkCode=ogi",
+      "desc": "The classic compact blender for daily smoothies."
+    },
+    {
+      "name": "SanDisk Extreme Pro 128GB Flash Drive",
+      "link": "https://www.amazon.nl/dp/B01MU8TZRV?tag=tim2103-20&linkCode=ogi",
+      "desc": "SSD-level performance in a USB flash drive."
+    },
+    {
+      "name": "Keychron K2 Mechanical Keyboard",
+      "link": "https://www.amazon.nl/dp/B07QBPDWLS?tag=tim2103-20&linkCode=ogi",
+      "desc": "The perfect tactile keyboard for Mac and Windows users."
+    },
+    {
+      "name": "Ring Stick Up Cam Battery",
+      "link": "https://www.amazon.nl/dp/B07Y296G7T?tag=tim2103-20&linkCode=ogi",
+      "desc": "Versatile indoor/outdoor security camera with easy setup."
+    },
+    {
+      "name": "Garmin Forerunner 255",
+      "link": "https://www.amazon.nl/dp/B09X5X558X?tag=tim2103-20&linkCode=ogi",
+      "desc": "Serious running watch with multi-band GPS."
+    },
+    {
+      "name": "Bose TV Speaker Soundbar",
+      "link": "https://www.amazon.nl/dp/B088KR6677?tag=tim2103-20&linkCode=ogi",
+      "desc": "Simple, one-connection solution for better TV sound."
+    },
+    {
+      "name": "Peak Design Everyday Backpack (20L)",
+      "link": "https://www.amazon.nl/dp/B07YGTTS9Z?tag=tim2103-20&linkCode=ogi",
+      "desc": "Premium gear organization for photographers and commuters."
+    }
+  ]
 }

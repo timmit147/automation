@@ -1,0 +1,66 @@
+{
+  "affiliate_tag": "tim2103-20",
+  "store": "amazon.nl",
+  "products": [
+    {
+      "name": "Razer Viper V3 HyperSpeed",
+      "category": "mouse",
+      "angle": "gaming and productivity",
+      "affiliate_url": "https://www.amazon.nl/Razer-Viper-HyperSpeed-Muisschakelaars-Scansnelheid/dp/B0CBCPB2T1?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "Logitech MK345 Draadloze Combo",
+      "category": "keyboard_mouse_combo",
+      "angle": "office and home setup",
+      "affiliate_url": "https://www.amazon.nl/Logitech-Toetsenbord-Comfortabele-Rechtshandige-USB-Ontvanger/dp/B00S67M430?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "Amazon Basics Laptopstandaard",
+      "category": "laptop_stand",
+      "angle": "ergonomic desk setup",
+      "affiliate_url": "https://www.amazon.nl/Amazon-Basics-Laptopstandaard-verstelbaar-ergonomisch/dp/B09WNFVB87?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "Anker PowerConf C200",
+      "category": "webcam",
+      "angle": "remote work and meetings",
+      "affiliate_url": "https://www.amazon.nl/Anker-computercamera-AI-ruisonderdrukking-stereomicrofoons-privacysluiter/dp/B09MFMTMPD?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "UGREEN 3-slot Vertical Laptop Stand",
+      "category": "laptop_stand",
+      "angle": "space-saving desk accessory",
+      "affiliate_url": "https://www.amazon.nl/UGREEN-Verticale-Aluminium-MacBook-Ruimtebesparende/dp/B0CNXDLJQ5?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "Logitech MX Master 3S",
+      "category": "mouse",
+      "angle": "premium office mouse",
+      "affiliate_url": "https://www.amazon.nl/-/en/Logitech-Right-hand-Wireless-Bluetooth-W128212103/dp/B0BS9VVQPD?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "Anker 323 Power Bank",
+      "category": "power_bank",
+      "angle": "portable charging",
+      "affiliate_url": "https://www.amazon.nl/Anker-323-Power-Bank-B2C/dp/B0BWJ87T9P?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "Elgato Facecam Neo",
+      "category": "webcam",
+      "angle": "content creation and calls",
+      "affiliate_url": "https://www.amazon.nl/Elgato-Facecam-privacyschuifje-lichtcorrectie-videogesprekken/dp/B0CVYHHDLD?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "Briloner Tafellamp",
+      "category": "desk_lamp",
+      "angle": "study and workspace lighting",
+      "affiliate_url": "https://www.amazon.nl/BRILONER-Tafellamp-kabelschakelaar-keramische-bureaulamp/dp/B0FNRVC7CQ?tag=tim2103-20&linkCode=ogi"
+    },
+    {
+      "name": "GRIFEMA GB1054B Laptop Stand",
+      "category": "laptop_stand",
+      "angle": "budget ergonomic setup",
+      "affiliate_url": "https://www.amazon.nl/GRIFEMA-GB1054B-verstelbare-laptopstandaard-hoekverstelling/dp/B0D69NHWPG?tag=tim2103-20&linkCode=ogi"
+    }
+  ]
+}

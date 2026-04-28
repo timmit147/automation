@@ -12,6 +12,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      GEMINI_MODEL: gemini-2.5-flash-lite
+      # Change this if you use a custom domain.
+      SITE_BASE: https://timmit147.github.io/automation
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -19,14 +24,44 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate page + index
+      - name: Generate pages, index, sitemap, robots
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -euo pipefail
 
-          # Find next page number
-          LAST=$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1)
+          call_gemini() {
+            local payload="$1"
+            local response=""
+            local attempt=1
+
+            while [ "$attempt" -le 3 ]; do
+              response="$(curl -sS -X POST \
+                -H "Content-Type: application/json" \
+                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+                -d "$payload" \
+                "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" || true)"
+
+              if [ -n "$response" ]; then
+                local text
+                text="$(echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
+                if [ -n "$text" ]; then
+                  printf '%s' "$response"
+                  return 0
+                fi
+              fi
+
+              echo "Gemini attempt ${attempt} failed, retrying..."
+              sleep $((attempt * 2))
+              attempt=$((attempt + 1))
+            done
+
+            printf '%s' "$response"
+            return 1
+          }
+
+          # Find next page number.
+          LAST=$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1 || true)
           if [ -z "${LAST:-}" ]; then
             NEXT=1
           else
@@ -36,96 +71,157 @@ jobs:
           echo "Creating page${NEXT}"
           mkdir -p "page${NEXT}"
 
-          # Ask Gemini for keyword ideas
-          KEYWORD_RESPONSE=$(curl -fsS \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-            -d "$(jq -n --arg text 'Generate 5 high-intent SEO money keywords. Must be specific, low competition, and include words like best, free, cheap, for students, for freelancers, under 10 euro. Return comma-separated only.' '{
-              contents: [
-                {
-                  parts: [
-                    { text: $text }
-                  ]
-                }
-              ]
-            }')" \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
+          # Gather a few recent pages so Gemini can add internal links.
+          RELATED_TEXT=""
+          for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V | tail -n 3); do
+            title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
+            if [ -z "$title" ]; then
+              title="$dir"
+            fi
+            RELATED_TEXT="${RELATED_TEXT}- ${title} -> /${dir}/"$'\n'
+          done
 
+          if [ -z "$RELATED_TEXT" ]; then
+            RELATED_TEXT="- Home -> /"$'\n'
+          fi
+
+          # Step 1: generate 5 high-intent keywords.
+          KEYWORD_PROMPT="Generate 5 high-intent SEO money keywords. Must be specific, low competition, and include words like best, free, cheap, for students, for freelancers, under 10 euro. Return comma-separated only."
+          KEYWORD_PAYLOAD="$(jq -n --arg text "$KEYWORD_PROMPT" '{
+            contents: [
+              {
+                parts: [
+                  { text: $text }
+                ]
+              }
+            ]
+          }')"
+
+          KEYWORD_RESPONSE="$(call_gemini "$KEYWORD_PAYLOAD" || true)"
           echo "Raw keyword response:"
           echo "$KEYWORD_RESPONSE"
 
-          KEYWORDS=$(echo "$KEYWORD_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
-
+          KEYWORDS="$(echo "$KEYWORD_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
           if [ -z "$KEYWORDS" ]; then
-            KEYWORDS="best free ai tools for students, cheap productivity tools under 10 euro, ai resume builder free europe, how to save money using ai, best side hustle tools"
+            KEYWORDS="best cheap CRM for freelancers under 10 euro,best free invoice generator for freelancers,best productivity app for students under 10 euro,cheap website builder for students under 10 euro monthly,best free stock photos for freelancers commercial use"
           fi
 
-          KEYWORD=$(echo "$KEYWORDS" | cut -d',' -f1 | xargs)
+          KEYWORD="$(echo "$KEYWORDS" | cut -d',' -f1 | xargs)"
           if [ -z "$KEYWORD" ]; then
-            KEYWORD="best free ai tools for students"
+            KEYWORD="best cheap CRM for freelancers under 10 euro"
           fi
 
           echo "Keyword: $KEYWORD"
 
-          # Generate the page HTML
-          PAGE_RESPONSE=$(curl -fsS \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-            -d "$(jq -n --arg text "Return ONLY valid HTML. No markdown, no backticks, no explanation. Start with <!DOCTYPE html> and create a full SEO blog post about: '$KEYWORD'. Include headings, practical tips, and a section called 'Recommended Tools'." '{
-              contents: [
-                {
-                  parts: [
-                    { text: $text }
-                  ]
-                }
-              ]
-            }')" \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
+          # Step 2: generate the page.
+          PAGE_PROMPT="Return ONLY valid HTML. No markdown, no backticks, no explanation. Start with <!DOCTYPE html>. Create a full SEO blog post about: '$KEYWORD'. Include:
+          - a title tag
+          - meta description
+          - one H1
+          - helpful H2 sections
+          - practical tips
+          - FAQs
+          - a section called 'Recommended Tools' with 3 items
+          - a section called 'Related pages' using these links if relevant:
+          ${RELATED_TEXT}
+          Use clean semantic HTML and make the page look like a real article."
 
+          PAGE_PAYLOAD="$(jq -n --arg text "$PAGE_PROMPT" '{
+            contents: [
+              {
+                parts: [
+                  { text: $text }
+                ]
+              }
+            ]
+          }')"
+
+          PAGE_RESPONSE="$(call_gemini "$PAGE_PAYLOAD" || true)"
           echo "Raw page response:"
           echo "$PAGE_RESPONSE"
 
-          HTML=$(echo "$PAGE_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
-
+          HTML="$(echo "$PAGE_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
           if [ -z "$HTML" ]; then
-            HTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Generation failed</title></head><body><h1>Generation failed</h1><p>Fallback page</p></body></html>'
+            HTML="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Generation failed</title><meta name=\"description\" content=\"Fallback page\"></head><body><h1>Generation failed</h1><p>Fallback page</p></body></html>"
           fi
 
           printf '%s\n' "$HTML" > "page${NEXT}/index.html"
 
-          # Build index.html automatically
-          echo "Building index.html..."
-          cat > index.html <<'EOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>AI SEO Blog</title>
-          </head>
-          <body>
-            <h1>AI Generated SEO Pages</h1>
-            <p>Automatically generated content hub</p>
-            <ul>
-          EOF
+          # Small extra internal link block if the model forgot it.
+          if ! grep -qi 'related pages' "page${NEXT}/index.html"; then
+            cat >> "page${NEXT}/index.html" <<EOF
 
-          for dir in page*; do
-            if [ -d "$dir" ]; then
-              TITLE=$(grep -o '<title>[^<]*' "$dir/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)
-              if [ -z "$TITLE" ]; then
-                TITLE="$dir"
+<section>
+  <h2>Related pages</h2>
+  <ul>
+    <li><a href="/">Home</a></li>
+EOF
+            for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V | tail -n 3); do
+              if [ "$dir" != "page${NEXT}" ]; then
+                title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
+                if [ -z "$title" ]; then
+                  title="$dir"
+                fi
+                echo "    <li><a href=\"/${dir}/\">${title}</a></li>" >> "page${NEXT}/index.html"
               fi
-              echo "  <li><a href=\"$dir/\">$TITLE</a></li>" >> index.html
+            done
+            cat >> "page${NEXT}/index.html" <<EOF
+  </ul>
+</section>
+EOF
+          fi
+
+          # Root index.html
+          cat > index.html <<'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI SEO Blog</title>
+  <meta name="description" content="Automatically generated SEO pages.">
+</head>
+<body>
+  <h1>AI Generated SEO Pages</h1>
+  <p>Automatically generated content hub.</p>
+  <ul>
+EOF
+
+          for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V); do
+            title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
+            if [ -z "$title" ]; then
+              title="$dir"
             fi
+            printf '    <li><a href="%s/">%s</a></li>\n' "$dir" "$title" >> index.html
           done
 
           cat >> index.html <<'EOF'
-            </ul>
-          </body>
-          </html>
-          EOF
+  </ul>
+</body>
+</html>
+EOF
+
+          # robots.txt
+          cat > robots.txt <<EOF
+User-agent: *
+Allow: /
+
+Sitemap: ${SITE_BASE}/sitemap.xml
+EOF
+
+          # sitemap.xml
+          {
+            echo '<?xml version="1.0" encoding="UTF-8"?>'
+            echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            echo "  <url><loc>${SITE_BASE}/</loc></url>"
+            for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V); do
+              echo "  <url><loc>${SITE_BASE}/${dir}/</loc></url>"
+            done
+            echo '</urlset>'
+          } > sitemap.xml
+
+          # Disable Jekyll processing if you publish from the branch.
+          touch .nojekyll
 
       - name: Commit and push
         run: |

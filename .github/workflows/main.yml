@@ -23,7 +23,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          # Find last page number
+          # Get next page number
           LAST_PAGE=$(ls -d page* 2>/dev/null | sed 's/page//' | sort -n | tail -n 1)
 
           if [ -z "$LAST_PAGE" ]; then
@@ -35,13 +35,13 @@ jobs:
           echo "Creating page$NEXT_PAGE"
           mkdir -p page$NEXT_PAGE
 
-          # Prompt for Gemini
-          PROMPT="Create a clean, simple SEO-friendly HTML page about a useful topic. Only return valid HTML, nothing else."
+          # Strong prompt (forces HTML only)
+          PROMPT="Return ONLY raw HTML. No markdown, no explanation. Create a full valid HTML5 page with <html>, <head>, and <body>. Topic: a useful everyday subject."
 
-          # Call Gemini API
+          echo "Calling Gemini API..."
+
           RESPONSE=$(curl -s \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $GEMINI_API_KEY" \
             -d "{
               \"contents\": [{
                 \"parts\": [{
@@ -49,14 +49,18 @@ jobs:
                 }]
               }]
             }" \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent")
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY")
 
-          # Extract HTML
-          HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text')
+          echo "Raw API response:"
+          echo "$RESPONSE"
+
+          # Extract HTML safely
+          HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
           # Fallback if API fails
-          if [ -z "$HTML" ] || [ "$HTML" = "null" ]; then
-            HTML="<html><body><h1>Error generating content</h1></body></html>"
+          if [ -z "$HTML" ]; then
+            echo "Gemini failed, using fallback HTML"
+            HTML="<!DOCTYPE html><html><body><h1>Error generating content</h1></body></html>"
           fi
 
           # Save file

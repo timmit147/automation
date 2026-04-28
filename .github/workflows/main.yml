@@ -1,4 +1,4 @@
-name: Generate pages every 10 minutes
+name: Generate AI pages every 10 minutes
 
 on:
   schedule:
@@ -16,12 +16,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Create new page folder with index.html
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Generate page with Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          # Get latest page number
+          # Find last page number
           LAST_PAGE=$(ls -d page* 2>/dev/null | sed 's/page//' | sort -n | tail -n 1)
 
-          # Start at 1 if none exist
           if [ -z "$LAST_PAGE" ]; then
             NEXT_PAGE=1
           else
@@ -29,27 +33,39 @@ jobs:
           fi
 
           echo "Creating page$NEXT_PAGE"
-
           mkdir -p page$NEXT_PAGE
 
-          cat <<EOF > page$NEXT_PAGE/index.html
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Page $NEXT_PAGE</title>
-          </head>
-          <body>
-            <h1>This is page $NEXT_PAGE</h1>
-            <p>Generated at $(date)</p>
-          </body>
-          </html>
-          EOF
+          # Prompt for Gemini
+          PROMPT="Create a clean, simple SEO-friendly HTML page about a useful topic. Only return valid HTML, nothing else."
+
+          # Call Gemini API
+          RESPONSE=$(curl -s \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $GEMINI_API_KEY" \
+            -d "{
+              \"contents\": [{
+                \"parts\": [{
+                  \"text\": \"$PROMPT\"
+                }]
+              }]
+            }" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent")
+
+          # Extract HTML
+          HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text')
+
+          # Fallback if API fails
+          if [ -z "$HTML" ] || [ "$HTML" = "null" ]; then
+            HTML="<html><body><h1>Error generating content</h1></body></html>"
+          fi
+
+          # Save file
+          echo "$HTML" > page$NEXT_PAGE/index.html
 
       - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Add page $(date)" || echo "No changes to commit"
+          git commit -m "Add AI page $(date)" || echo "No changes"
           git push origin HEAD:main

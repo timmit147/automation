@@ -1,11 +1,6 @@
 {
   "products": [
     {
-      "name": "Sony WH-1000XM5 Noise Canceling Headphones",
-      "link": "https://www.amazon.nl/dp/B09Y2MYL61?tag=tim2103-20&linkCode=ogi",
-      "desc": "Industry-leading noise cancellation and exceptional call quality."
-    },
-    {
       "name": "Apple AirPods Pro (2nd Generation)",
       "link": "https://www.amazon.nl/dp/B0BDHWDR12?tag=tim2103-20&linkCode=ogi",
       "desc": "The most popular earbuds for iPhone users with MagSafe Charging Case."

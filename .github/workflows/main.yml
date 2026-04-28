@@ -17,124 +17,77 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install jq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate product page and update queue
+      - name: Generate affiliate page
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -euo pipefail
 
-          if [ ! -f data/products.json ]; then
-            echo "data/products.json not found"
-            exit 1
-          fi
+          echo "Loading product..."
 
-          COUNT="$(jq '.products | length' data/products.json)"
-          if [ "$COUNT" -le 0 ]; then
-            echo "No products left in data/products.json"
-            exit 0
-          fi
+          PRODUCT=$(jq -c '.products[0]' data/products.json)
+          NAME=$(echo "$PRODUCT" | jq -r '.name')
+          LINK=$(echo "$PRODUCT" | jq -r '.link')
 
-          PRODUCT="$(jq -c '.products[0]' data/products.json)"
-          NAME="$(echo "$PRODUCT" | jq -r '.name')"
-          LINK="$(echo "$PRODUCT" | jq -r '.link')"
+          echo "Product: $NAME"
 
-          echo "Processing: $NAME"
+          # remove used product
+          jq 'del(.products[0])' data/products.json > tmp.json
+          mv tmp.json data/products.json
 
-          jq 'del(.products[0])' data/products.json > data/products.tmp.json
-          mv data/products.tmp.json data/products.json
+          # page number
+          NEXT=$(find . -maxdepth 1 -type d -name "page*" | sed 's|./page||' | sort -n | tail -n 1)
+          if [ -z "$NEXT" ]; then NEXT=1; else NEXT=$((NEXT + 1)); fi
 
-          LAST="$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1 || true)"
-          if [ -z "${LAST:-}" ]; then
-            NEXT=1
-          else
-            NEXT=$((LAST + 1))
-          fi
+          mkdir -p "page$NEXT"
 
-          mkdir -p "page${NEXT}"
+          # simple prompt (NO HERE DOCS → avoids YAML breakage)
+          PROMPT="Write ONLY HTML. No markdown.
 
-          PROMPT=$(cat <<EOF
-Return ONLY valid HTML, no markdown, no explanation.
+          Product: $NAME
+          Affiliate link: $LINK
 
-Create a high-converting affiliate review page.
+          Create SEO review page with:
+          - title
+          - H1
+          - overview
+          - pros and cons
+          - FAQ
+          - CTA button linking to affiliate link"
 
-Product name: ${NAME}
-Affiliate link: ${LINK}
-
-Requirements:
-- SEO optimized title
-- strong H1
-- product image section if possible
-- sections:
-  - overview
-  - who it is for
-  - pros and cons
-  - benefits
-  - FAQ
-  - final verdict
-- include ONE CTA button linking to the affiliate link
-- persuasive but honest tone
-- mobile friendly design
-EOF
-)
-
-          RESPONSE="$(curl -sS -X POST \
+          RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
-            -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-            -d "$(jq -n --arg text "$PROMPT" '{
-              contents: [
-                {
-                  parts: [
-                    { text: $text }
-                  ]
-                }
-              ]
-            }')" \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")"
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            -d "{\"contents\":[{\"parts\":[{\"text\":\"$PROMPT\"}]}]}" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
 
-          HTML="$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
+          HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
           if [ -z "$HTML" ]; then
-            HTML="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>${NAME}</title></head><body><h1>${NAME}</h1><p><a href=\"${LINK}\">Buy on Amazon</a></p></body></html>"
+            HTML="<!DOCTYPE html><html><head><title>$NAME</title></head><body><h1>$NAME</h1><a href='$LINK'>Buy</a></body></html>"
           fi
 
-          printf '%s\n' "$HTML" > "page${NEXT}/index.html"
+          echo "$HTML" > "page$NEXT/index.html"
 
-          cat > index.html <<'EOF'
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Affiliate Pages</title>
-</head>
-<body>
-  <h1>Affiliate Product Pages</h1>
-  <ul>
-EOF
+          # rebuild index
+          echo "<h1>Affiliate Pages</h1><ul>" > index.html
 
-          for dir in page*; do
-            if [ -d "$dir" ]; then
-              TITLE="$(grep -o '<title>[^<]*' "$dir/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
-              if [ -z "$TITLE" ]; then
-                TITLE="$dir"
-              fi
-              printf '    <li><a href="%s/">%s</a></li>\n' "$dir" "$TITLE" >> index.html
+          for d in page*; do
+            if [ -d "$d" ]; then
+              TITLE=$(grep -o '<title>[^<]*' "$d/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)
+              [ -z "$TITLE" ] && TITLE="$d"
+              echo "<li><a href='$d/'>$TITLE</a></li>" >> index.html
             fi
           done
 
-          cat >> index.html <<'EOF'
-  </ul>
-</body>
-</html>
-EOF
+          echo "</ul>" >> index.html
 
       - name: Commit changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/products.json index.html page*
+          git add .
           git commit -m "Generate affiliate page" || echo "No changes"
-          git push origin HEAD:main
+          git push

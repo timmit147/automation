@@ -14,7 +14,6 @@ jobs:
 
     env:
       GEMINI_MODEL: gemini-2.5-flash-lite
-      # Change this if you use a custom domain.
       SITE_BASE: https://timmit147.github.io/automation
 
     steps:
@@ -24,7 +23,7 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate pages, index, sitemap, robots
+      - name: Generate pages and site files
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -60,8 +59,7 @@ jobs:
             return 1
           }
 
-          # Find next page number.
-          LAST=$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1 || true)
+          LAST="$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1 || true)"
           if [ -z "${LAST:-}" ]; then
             NEXT=1
           else
@@ -71,7 +69,6 @@ jobs:
           echo "Creating page${NEXT}"
           mkdir -p "page${NEXT}"
 
-          # Gather a few recent pages so Gemini can add internal links.
           RELATED_TEXT=""
           for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V | tail -n 3); do
             title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
@@ -85,7 +82,6 @@ jobs:
             RELATED_TEXT="- Home -> /"$'\n'
           fi
 
-          # Step 1: generate 5 high-intent keywords.
           KEYWORD_PROMPT="Generate 5 high-intent SEO money keywords. Must be specific, low competition, and include words like best, free, cheap, for students, for freelancers, under 10 euro. Return comma-separated only."
           KEYWORD_PAYLOAD="$(jq -n --arg text "$KEYWORD_PROMPT" '{
             contents: [
@@ -113,16 +109,7 @@ jobs:
 
           echo "Keyword: $KEYWORD"
 
-          # Step 2: generate the page.
-          PAGE_PROMPT="Return ONLY valid HTML. No markdown, no backticks, no explanation. Start with <!DOCTYPE html>. Create a full SEO blog post about: '$KEYWORD'. Include:
-          - a title tag
-          - meta description
-          - one H1
-          - helpful H2 sections
-          - practical tips
-          - FAQs
-          - a section called 'Recommended Tools' with 3 items
-          - a section called 'Related pages' using these links if relevant:
+          PAGE_PROMPT="Return ONLY valid HTML. No markdown, no backticks, no explanation. Start with <!DOCTYPE html>. Create a full SEO blog post about: '$KEYWORD'. Include a title tag, meta description, one H1, helpful H2 sections, practical tips, FAQs, a section called Recommended Tools with 3 items, and a section called Related pages using these links if relevant:
           ${RELATED_TEXT}
           Use clean semantic HTML and make the page look like a real article."
 
@@ -142,50 +129,45 @@ jobs:
 
           HTML="$(echo "$PAGE_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
           if [ -z "$HTML" ]; then
-            HTML="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Generation failed</title><meta name=\"description\" content=\"Fallback page\"></head><body><h1>Generation failed</h1><p>Fallback page</p></body></html>"
+            HTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Generation failed</title><meta name="description" content="Fallback page"></head><body><h1>Generation failed</h1><p>Fallback page</p></body></html>'
           fi
 
           printf '%s\n' "$HTML" > "page${NEXT}/index.html"
 
-          # Small extra internal link block if the model forgot it.
           if ! grep -qi 'related pages' "page${NEXT}/index.html"; then
-            cat >> "page${NEXT}/index.html" <<EOF
-
-<section>
-  <h2>Related pages</h2>
-  <ul>
-    <li><a href="/">Home</a></li>
-EOF
-            for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V | tail -n 3); do
-              if [ "$dir" != "page${NEXT}" ]; then
-                title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
-                if [ -z "$title" ]; then
-                  title="$dir"
+            {
+              printf '\n<section>\n'
+              printf '  <h2>Related pages</h2>\n'
+              printf '  <ul>\n'
+              printf '    <li><a href="/">Home</a></li>\n'
+              for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V | tail -n 3); do
+                if [ "$dir" != "page${NEXT}" ]; then
+                  title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
+                  if [ -z "$title" ]; then
+                    title="$dir"
+                  fi
+                  printf '    <li><a href="/%s/">%s</a></li>\n' "$dir" "$title"
                 fi
-                echo "    <li><a href=\"/${dir}/\">${title}</a></li>" >> "page${NEXT}/index.html"
-              fi
-            done
-            cat >> "page${NEXT}/index.html" <<EOF
-  </ul>
-</section>
-EOF
+              done
+              printf '  </ul>\n'
+              printf '</section>\n'
+            } >> "page${NEXT}/index.html"
           fi
 
-          # Root index.html
-          cat > index.html <<'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI SEO Blog</title>
-  <meta name="description" content="Automatically generated SEO pages.">
-</head>
-<body>
-  <h1>AI Generated SEO Pages</h1>
-  <p>Automatically generated content hub.</p>
-  <ul>
-EOF
+          {
+            printf '%s\n' '<!DOCTYPE html>'
+            printf '%s\n' '<html lang="en">'
+            printf '%s\n' '<head>'
+            printf '%s\n' '  <meta charset="UTF-8">'
+            printf '%s\n' '  <meta name="viewport" content="width=device-width, initial-scale=1.0">'
+            printf '%s\n' '  <title>AI SEO Blog</title>'
+            printf '%s\n' '  <meta name="description" content="Automatically generated SEO pages.">'
+            printf '%s\n' '</head>'
+            printf '%s\n' '<body>'
+            printf '%s\n' '  <h1>AI Generated SEO Pages</h1>'
+            printf '%s\n' '  <p>Automatically generated content hub.</p>'
+            printf '%s\n' '  <ul>'
+          } > index.html
 
           for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V); do
             title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
@@ -195,38 +177,32 @@ EOF
             printf '    <li><a href="%s/">%s</a></li>\n' "$dir" "$title" >> index.html
           done
 
-          cat >> index.html <<'EOF'
-  </ul>
-</body>
-</html>
-EOF
-
-          # robots.txt
-          cat > robots.txt <<EOF
-User-agent: *
-Allow: /
-
-Sitemap: ${SITE_BASE}/sitemap.xml
-EOF
-
-          # sitemap.xml
           {
-            echo '<?xml version="1.0" encoding="UTF-8"?>'
-            echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-            echo "  <url><loc>${SITE_BASE}/</loc></url>"
+            printf '%s\n' '  </ul>'
+            printf '%s\n' '</body>'
+            printf '%s\n' '</html>'
+          } >> index.html
+
+          printf '%s\n' 'User-agent: *' > robots.txt
+          printf '%s\n' 'Allow: /' >> robots.txt
+          printf '\nSitemap: %s/sitemap.xml\n' "$SITE_BASE" >> robots.txt
+
+          {
+            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>'
+            printf '%s\n' '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            printf '  <url><loc>%s/</loc></url>\n' "$SITE_BASE"
             for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V); do
-              echo "  <url><loc>${SITE_BASE}/${dir}/</loc></url>"
+              printf '  <url><loc>%s/%s/</loc></url>\n' "$SITE_BASE" "$dir"
             done
-            echo '</urlset>'
+            printf '%s\n' '</urlset>'
           } > sitemap.xml
 
-          # Disable Jekyll processing if you publish from the branch.
           touch .nojekyll
 
       - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add .
+          git add -A
           git commit -m "AI SEO update $(date)" || echo "No changes"
           git push origin HEAD:main

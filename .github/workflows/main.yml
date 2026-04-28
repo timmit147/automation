@@ -1,4 +1,4 @@
-name: Product First Affiliate Pages
+name: Affiliate Page Generator
 
 on:
   schedule:
@@ -12,9 +12,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      GEMINI_MODEL: gemini-2.5-flash-lite
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -22,178 +19,121 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate page from one product
+      - name: Generate product page and update queue
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -euo pipefail
 
-          call_gemini() {
-            local payload="$1"
-            local response=""
-            local attempt=1
+          # ----------------------------
+          # 1. Get first product
+          # ----------------------------
+          PRODUCT=$(jq -c '.products[0]' data/products.json)
 
-            while [ "$attempt" -le 3 ]; do
-              response="$(curl -sS -X POST \
-                -H "Content-Type: application/json" \
-                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-                -d "$payload" \
-                "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" || true)"
+          NAME=$(echo "$PRODUCT" | jq -r '.name')
+          LINK=$(echo "$PRODUCT" | jq -r '.link')
 
-              if [ -n "$response" ]; then
-                local text
-                text="$(echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
-                if [ -n "$text" ]; then
-                  printf '%s' "$response"
-                  return 0
-                fi
-              fi
+          echo "Processing: $NAME"
 
-              sleep $((attempt * 2))
-              attempt=$((attempt + 1))
-            done
+          # ----------------------------
+          # 2. Remove first product (queue system)
+          # ----------------------------
+          jq 'del(.products[0])' data/products.json > tmp.json && mv tmp.json data/products.json
 
-            printf '%s' "$response"
-            return 1
-          }
-
-          if [ ! -f data/products.json ]; then
-            echo "data/products.json not found"
-            exit 1
-          fi
-
-          COUNT="$(jq '.products | length' data/products.json)"
-          if [ "${COUNT}" -le 0 ]; then
-            echo "No products found in data/products.json"
-            exit 1
-          fi
-
-          INDEX=$((RANDOM % COUNT))
-
-          PRODUCT_JSON="$(jq -c --argjson i "$INDEX" '.products[$i]' data/products.json)"
-          NAME="$(echo "$PRODUCT_JSON" | jq -r '.name')"
-          CATEGORY="$(echo "$PRODUCT_JSON" | jq -r '.category')"
-          FOCUS="$(echo "$PRODUCT_JSON" | jq -r '.focus')"
-          LINK="$(echo "$PRODUCT_JSON" | jq -r '.affiliate_url')"
-
-          if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
-            echo "Invalid product selected"
-            exit 1
-          fi
-
-          LAST="$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1 || true)"
-          if [ -z "${LAST:-}" ]; then
+          # ----------------------------
+          # 3. Create page folder
+          # ----------------------------
+          LAST=$(find . -maxdepth 1 -type d -name "page*" | sed 's|^\./page||' | sort -n | tail -n 1)
+          if [ -z "$LAST" ]; then
             NEXT=1
           else
             NEXT=$((LAST + 1))
           fi
 
-          mkdir -p "page${NEXT}"
+          mkdir -p "page$NEXT"
 
-          KEYWORD_PROMPT="Generate 5 buyer-intent SEO keywords for this product:
-          Product: ${NAME}
-          Category: ${CATEGORY}
-          Focus: ${FOCUS}
+          # ----------------------------
+          # 4. Gemini prompt
+          # ----------------------------
+          PROMPT="Return ONLY valid HTML (no markdown).
 
-          The keywords should be specific, focused on people wanting to buy, compare, or review this product. Return comma-separated only."
+          Create a high-converting affiliate review page.
 
-          KEYWORD_PAYLOAD="$(jq -n --arg text "$KEYWORD_PROMPT" '{
-            contents: [
-              {
-                parts: [
-                  { text: $text }
-                ]
-              }
-            ]
-          }')"
+          Product name: $NAME
+          Affiliate link: $LINK
 
-          KEYWORD_RESPONSE="$(call_gemini "$KEYWORD_PAYLOAD" || true)"
-          KEYWORDS="$(echo "$KEYWORD_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
+          Requirements:
+          - SEO optimized title
+          - strong H1
+          - product image section (you may use placeholder if unknown)
+          - sections:
+            * overview
+            * who it is for
+            * pros and cons
+            * benefits
+            * FAQ
+            * final verdict
+          - include ONE CTA button linking to affiliate link
+          - persuasive but honest tone
+          - mobile friendly design"
 
-          if [ -z "$KEYWORDS" ]; then
-            KEYWORDS="${NAME} review, best ${CATEGORY}, ${NAME} alternatives, is ${NAME} worth it, ${CATEGORY} for freelancers"
-          fi
+          RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            -d "{
+              \"contents\": [
+                {
+                  \"parts\": [
+                    { \"text\": \"$PROMPT\" }
+                  ]
+                }
+              ]
+            }" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
 
-          MAIN_KEYWORD="$(echo "$KEYWORDS" | cut -d',' -f1 | xargs)"
-          if [ -z "$MAIN_KEYWORD" ]; then
-            MAIN_KEYWORD="${NAME} review"
-          fi
+          HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
-          PAGE_PROMPT="Return ONLY valid HTML. No markdown, no explanation, no backticks.
-
-          Create a high-converting product review page about:
-          Product: ${NAME}
-          Main keyword: ${MAIN_KEYWORD}
-          Category: ${CATEGORY}
-          Focus: ${FOCUS}
-
-          Rules:
-          - Start with <!DOCTYPE html>
-          - Include title tag and meta description
-          - Use one H1
-          - Write a persuasive but honest review
-          - Include sections: overview, who it is for, benefits, pros and cons, FAQ, conclusion
-          - Include a clear call to action
-          - Mention this affiliate link naturally once in the page:
-          ${LINK}
-
-          The goal is to help the reader understand why they may want to buy it."
-
-          PAGE_PAYLOAD="$(jq -n --arg text "$PAGE_PROMPT" '{
-            contents: [
-              {
-                parts: [
-                  { text: $text }
-                ]
-              }
-            ]
-          }')"
-
-          PAGE_RESPONSE="$(call_gemini "$PAGE_PAYLOAD" || true)"
-          HTML="$(echo "$PAGE_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
-
+          # fallback if AI fails
           if [ -z "$HTML" ]; then
-            HTML="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>${NAME}</title><meta name=\"description\" content=\"Review of ${NAME}\"></head><body><h1>${NAME}</h1><p>Generation failed.</p><p><a href=\"${LINK}\">Check on Amazon</a></p></body></html>"
+            HTML="<!DOCTYPE html><html><head><title>$NAME</title></head><body><h1>$NAME</h1><a href='$LINK'>Buy on Amazon</a></body></html>"
           fi
 
-          printf '%s\n' "$HTML" > "page${NEXT}/index.html"
+          echo "$HTML" > "page$NEXT/index.html"
 
-          cat > index.html <<'EOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>AI Product Pages</title>
-            <meta name="description" content="Automatically generated product review pages.">
-          </head>
-          <body>
-            <h1>AI Product Pages</h1>
-            <ul>
-          EOF
+          # ----------------------------
+          # 5. Rebuild homepage index
+          # ----------------------------
+          cat > index.html <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Affiliate Pages</title>
+</head>
+<body>
+<h1>Affiliate Product Pages</h1>
+<ul>
+EOF
 
           for dir in page*; do
             if [ -d "$dir" ]; then
-              TITLE="$(grep -o '<title>[^<]*' "$dir/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
-              if [ -z "$TITLE" ]; then
-                TITLE="$dir"
-              fi
-              printf '              <li><a href="%s/">%s</a></li>\n' "$dir" "$TITLE" >> index.html
+              TITLE=$(grep -o '<title>[^<]*' "$dir/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)
+              [ -z "$TITLE" ] && TITLE="$dir"
+              echo "<li><a href='$dir/'>$TITLE</a></li>" >> index.html
             fi
           done
 
-          cat >> index.html <<'EOF'
-            </ul>
-          </body>
-          </html>
-          EOF
+          cat >> index.html <<EOF
+</ul>
+</body>
+</html>
+EOF
 
-          touch .nojekyll
-
-      - name: Commit and push
-        run: |
+          # ----------------------------
+          # 6. Commit changes
+          # ----------------------------
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "Auto-generate product page" || echo "No changes"
-          git push origin HEAD:main
+
+          git add data/products.json index.html page*
+          git commit -m "Generate affiliate page for $NAME" || echo "No changes"
+          git push

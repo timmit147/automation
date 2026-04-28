@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://timmit147.github.io/automation/sitemap.xml

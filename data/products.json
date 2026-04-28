@@ -1,11 +1,6 @@
 {
   "products": [
     {
-      "name": "Kindle Paperwhite (16 GB)",
-      "link": "https://www.amazon.nl/dp/B09TMF67Y2?tag=tim2103-20&linkCode=ogi",
-      "desc": "The best e-reader on the market with a 6.8-inch display and adjustable warm light."
-    },
-    {
       "name": "Sony WH-1000XM5 Noise Canceling Headphones",
       "link": "https://www.amazon.nl/dp/B09Y2MYL61?tag=tim2103-20&linkCode=ogi",
       "desc": "Industry-leading noise cancellation and exceptional call quality."

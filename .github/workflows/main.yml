@@ -1,4 +1,4 @@
-name: Generate AI pages every 10 minutes
+name: AI Keyword Pages
 
 on:
   schedule:
@@ -13,63 +13,70 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate page with Gemini
+      - name: Generate keyword + page
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -e
 
-          # Find next page number
-          LAST_PAGE=$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1)
+          # Get page number
+          LAST=$(ls -d page* 2>/dev/null | sed 's/page//' | sort -n | tail -n 1)
+          if [ -z "$LAST" ]; then NEXT=1; else NEXT=$((LAST+1)); fi
 
-          if [ -z "$LAST_PAGE" ]; then
-            NEXT_PAGE=1
-          else
-            NEXT_PAGE=$((LAST_PAGE + 1))
-          fi
+          mkdir -p page$NEXT
 
-          echo "Creating page$NEXT_PAGE"
-          mkdir -p "page$NEXT_PAGE"
+          echo "Generating keywords..."
 
-          PROMPT='Return ONLY raw HTML. No markdown, no explanation. Create a full valid HTML5 page with <html>, <head>, and <body>. Topic: a useful everyday subject.'
+          KEYWORD_RESPONSE=$(curl -s \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"contents\": [{
+                \"parts\": [{
+                  \"text\": \"Give me 5 trending low-competition SEO keywords for today. Focus on practical, money, tech, travel or daily life topics. Return only a comma-separated list.\"
+                }]
+              }]
+            }" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY")
 
-          RESPONSE=$(curl -s \
-            -X POST \
-            -H 'Content-Type: application/json' \
-            -H "x-goog-api-key: $GEMINI_API_KEY" \
-            -d "$(jq -n --arg text "$PROMPT" '{
-              contents: [
-                {
-                  parts: [
-                    { text: $text }
-                  ]
-                }
-              ]
-            }')" \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
+          KEYWORDS=$(echo "$KEYWORD_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
-          echo "Raw API response:"
-          echo "$RESPONSE"
+          echo "Keywords: $KEYWORDS"
 
-          HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+          # pick first keyword (simple start)
+          KEYWORD=$(echo "$KEYWORDS" | cut -d',' -f1)
+
+          echo "Selected keyword: $KEYWORD"
+
+          PROMPT="Return ONLY raw HTML. Create a full SEO-friendly webpage about: $KEYWORD. No markdown."
+
+          PAGE=$(curl -s \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"contents\": [{
+                \"parts\": [{
+                  \"text\": \"$PROMPT\"
+                }]
+              }]
+            }" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY")
+
+          HTML=$(echo "$PAGE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
           if [ -z "$HTML" ]; then
-            echo "Gemini failed, using fallback HTML"
-            HTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Error</title></head><body><h1>Error generating content</h1></body></html>'
+            HTML="<html><body><h1>Generation failed</h1></body></html>"
           fi
 
-          printf '%s\n' "$HTML" > "page$NEXT_PAGE/index.html"
+          echo "$HTML" > page$NEXT/index.html
 
-      - name: Commit and push
+      - name: Commit
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Add AI page $(date)" || echo "No changes"
+          git commit -m "AI page $(date)" || echo "no changes"
           git push origin HEAD:main

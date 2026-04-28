@@ -1,8 +1,8 @@
-name: AI SEO Site Generator
+name: Product First Affiliate Pages
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,6 @@ jobs:
 
     env:
       GEMINI_MODEL: gemini-2.5-flash-lite
-      SITE_BASE: https://timmit147.github.io/automation
 
     steps:
       - name: Checkout repo
@@ -23,7 +22,7 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate pages and site files
+      - name: Generate page from one product
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -50,7 +49,6 @@ jobs:
                 fi
               fi
 
-              echo "Gemini attempt ${attempt} failed, retrying..."
               sleep $((attempt * 2))
               attempt=$((attempt + 1))
             done
@@ -59,6 +57,30 @@ jobs:
             return 1
           }
 
+          if [ ! -f data/products.json ]; then
+            echo "data/products.json not found"
+            exit 1
+          fi
+
+          COUNT="$(jq '.products | length' data/products.json)"
+          if [ "${COUNT}" -le 0 ]; then
+            echo "No products found in data/products.json"
+            exit 1
+          fi
+
+          INDEX=$((RANDOM % COUNT))
+
+          PRODUCT_JSON="$(jq -c --argjson i "$INDEX" '.products[$i]' data/products.json)"
+          NAME="$(echo "$PRODUCT_JSON" | jq -r '.name')"
+          CATEGORY="$(echo "$PRODUCT_JSON" | jq -r '.category')"
+          FOCUS="$(echo "$PRODUCT_JSON" | jq -r '.focus')"
+          LINK="$(echo "$PRODUCT_JSON" | jq -r '.affiliate_url')"
+
+          if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
+            echo "Invalid product selected"
+            exit 1
+          fi
+
           LAST="$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1 || true)"
           if [ -z "${LAST:-}" ]; then
             NEXT=1
@@ -66,23 +88,15 @@ jobs:
             NEXT=$((LAST + 1))
           fi
 
-          echo "Creating page${NEXT}"
           mkdir -p "page${NEXT}"
 
-          RELATED_TEXT=""
-          for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V | tail -n 3); do
-            title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
-            if [ -z "$title" ]; then
-              title="$dir"
-            fi
-            RELATED_TEXT="${RELATED_TEXT}- ${title} -> /${dir}/"$'\n'
-          done
+          KEYWORD_PROMPT="Generate 5 buyer-intent SEO keywords for this product:
+          Product: ${NAME}
+          Category: ${CATEGORY}
+          Focus: ${FOCUS}
 
-          if [ -z "$RELATED_TEXT" ]; then
-            RELATED_TEXT="- Home -> /"$'\n'
-          fi
+          The keywords should be specific, focused on people wanting to buy, compare, or review this product. Return comma-separated only."
 
-          KEYWORD_PROMPT="Generate 5 high-intent SEO money keywords. Must be specific, low competition, and include words like best, free, cheap, for students, for freelancers, under 10 euro. Return comma-separated only."
           KEYWORD_PAYLOAD="$(jq -n --arg text "$KEYWORD_PROMPT" '{
             contents: [
               {
@@ -94,24 +108,36 @@ jobs:
           }')"
 
           KEYWORD_RESPONSE="$(call_gemini "$KEYWORD_PAYLOAD" || true)"
-          echo "Raw keyword response:"
-          echo "$KEYWORD_RESPONSE"
-
           KEYWORDS="$(echo "$KEYWORD_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
+
           if [ -z "$KEYWORDS" ]; then
-            KEYWORDS="best cheap CRM for freelancers under 10 euro,best free invoice generator for freelancers,best productivity app for students under 10 euro,cheap website builder for students under 10 euro monthly,best free stock photos for freelancers commercial use"
+            KEYWORDS="${NAME} review, best ${CATEGORY}, ${NAME} alternatives, is ${NAME} worth it, ${CATEGORY} for freelancers"
           fi
 
-          KEYWORD="$(echo "$KEYWORDS" | cut -d',' -f1 | xargs)"
-          if [ -z "$KEYWORD" ]; then
-            KEYWORD="best cheap CRM for freelancers under 10 euro"
+          MAIN_KEYWORD="$(echo "$KEYWORDS" | cut -d',' -f1 | xargs)"
+          if [ -z "$MAIN_KEYWORD" ]; then
+            MAIN_KEYWORD="${NAME} review"
           fi
 
-          echo "Keyword: $KEYWORD"
+          PAGE_PROMPT="Return ONLY valid HTML. No markdown, no explanation, no backticks.
 
-          PAGE_PROMPT="Return ONLY valid HTML. No markdown, no backticks, no explanation. Start with <!DOCTYPE html>. Create a full SEO blog post about: '$KEYWORD'. Include a title tag, meta description, one H1, helpful H2 sections, practical tips, FAQs, a section called Recommended Tools with 3 items, and a section called Related pages using these links if relevant:
-          ${RELATED_TEXT}
-          Use clean semantic HTML and make the page look like a real article."
+          Create a high-converting product review page about:
+          Product: ${NAME}
+          Main keyword: ${MAIN_KEYWORD}
+          Category: ${CATEGORY}
+          Focus: ${FOCUS}
+
+          Rules:
+          - Start with <!DOCTYPE html>
+          - Include title tag and meta description
+          - Use one H1
+          - Write a persuasive but honest review
+          - Include sections: overview, who it is for, benefits, pros and cons, FAQ, conclusion
+          - Include a clear call to action
+          - Mention this affiliate link naturally once in the page:
+          ${LINK}
+
+          The goal is to help the reader understand why they may want to buy it."
 
           PAGE_PAYLOAD="$(jq -n --arg text "$PAGE_PROMPT" '{
             contents: [
@@ -124,78 +150,43 @@ jobs:
           }')"
 
           PAGE_RESPONSE="$(call_gemini "$PAGE_PAYLOAD" || true)"
-          echo "Raw page response:"
-          echo "$PAGE_RESPONSE"
-
           HTML="$(echo "$PAGE_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' 2>/dev/null || true)"
+
           if [ -z "$HTML" ]; then
-            HTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Generation failed</title><meta name="description" content="Fallback page"></head><body><h1>Generation failed</h1><p>Fallback page</p></body></html>'
+            HTML="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>${NAME}</title><meta name=\"description\" content=\"Review of ${NAME}\"></head><body><h1>${NAME}</h1><p>Generation failed.</p><p><a href=\"${LINK}\">Check on Amazon</a></p></body></html>"
           fi
 
           printf '%s\n' "$HTML" > "page${NEXT}/index.html"
 
-          if ! grep -qi 'related pages' "page${NEXT}/index.html"; then
-            {
-              printf '\n<section>\n'
-              printf '  <h2>Related pages</h2>\n'
-              printf '  <ul>\n'
-              printf '    <li><a href="/">Home</a></li>\n'
-              for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V | tail -n 3); do
-                if [ "$dir" != "page${NEXT}" ]; then
-                  title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
-                  if [ -z "$title" ]; then
-                    title="$dir"
-                  fi
-                  printf '    <li><a href="/%s/">%s</a></li>\n' "$dir" "$title"
-                fi
-              done
-              printf '  </ul>\n'
-              printf '</section>\n'
-            } >> "page${NEXT}/index.html"
-          fi
+          cat > index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>AI Product Pages</title>
+            <meta name="description" content="Automatically generated product review pages.">
+          </head>
+          <body>
+            <h1>AI Product Pages</h1>
+            <ul>
+          EOF
 
-          {
-            printf '%s\n' '<!DOCTYPE html>'
-            printf '%s\n' '<html lang="en">'
-            printf '%s\n' '<head>'
-            printf '%s\n' '  <meta charset="UTF-8">'
-            printf '%s\n' '  <meta name="viewport" content="width=device-width, initial-scale=1.0">'
-            printf '%s\n' '  <title>AI SEO Blog</title>'
-            printf '%s\n' '  <meta name="description" content="Automatically generated SEO pages.">'
-            printf '%s\n' '</head>'
-            printf '%s\n' '<body>'
-            printf '%s\n' '  <h1>AI Generated SEO Pages</h1>'
-            printf '%s\n' '  <p>Automatically generated content hub.</p>'
-            printf '%s\n' '  <ul>'
-          } > index.html
-
-          for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V); do
-            title="$(grep -o '<title>[^<]*' "${dir}/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
-            if [ -z "$title" ]; then
-              title="$dir"
+          for dir in page*; do
+            if [ -d "$dir" ]; then
+              TITLE="$(grep -o '<title>[^<]*' "$dir/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
+              if [ -z "$TITLE" ]; then
+                TITLE="$dir"
+              fi
+              printf '              <li><a href="%s/">%s</a></li>\n' "$dir" "$TITLE" >> index.html
             fi
-            printf '    <li><a href="%s/">%s</a></li>\n' "$dir" "$title" >> index.html
           done
 
-          {
-            printf '%s\n' '  </ul>'
-            printf '%s\n' '</body>'
-            printf '%s\n' '</html>'
-          } >> index.html
-
-          printf '%s\n' 'User-agent: *' > robots.txt
-          printf '%s\n' 'Allow: /' >> robots.txt
-          printf '\nSitemap: %s/sitemap.xml\n' "$SITE_BASE" >> robots.txt
-
-          {
-            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>'
-            printf '%s\n' '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-            printf '  <url><loc>%s/</loc></url>\n' "$SITE_BASE"
-            for dir in $(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./||' | sort -V); do
-              printf '  <url><loc>%s/%s/</loc></url>\n' "$SITE_BASE" "$dir"
-            done
-            printf '%s\n' '</urlset>'
-          } > sitemap.xml
+          cat >> index.html <<'EOF'
+            </ul>
+          </body>
+          </html>
+          EOF
 
           touch .nojekyll
 
@@ -204,5 +195,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add -A
-          git commit -m "AI SEO update $(date)" || echo "No changes"
+          git commit -m "Auto-generate product page" || echo "No changes"
           git push origin HEAD:main

@@ -23,29 +23,30 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          set -e
+          set -euo pipefail
 
-          echo "Finding next page number..."
+          LAST=$(find . -maxdepth 1 -type d -name 'page*' | sed 's|^\./page||' | sort -n | tail -n 1)
+          if [ -z "${LAST:-}" ]; then
+            NEXT=1
+          else
+            NEXT=$((LAST + 1))
+          fi
 
-          LAST=$(ls -d page* 2>/dev/null | sed 's/page//' | sort -n | tail -n 1)
-          if [ -z "$LAST" ]; then NEXT=1; else NEXT=$((LAST+1)); fi
+          echo "Creating page${NEXT}"
+          mkdir -p "page${NEXT}"
 
-          echo "Creating page $NEXT"
-          mkdir -p page$NEXT
-
-          # -----------------------------
-          # 1. Generate MONEY keyword
-          # -----------------------------
           KEYWORD_RESPONSE=$(curl -s \
             -H "Content-Type: application/json" \
-            -d "{
-              \"contents\": [{
-                \"parts\": [{
-                  \"text\": \"Generate 5 high-intent SEO money keywords. Must be specific, low competition, include words like: best, free, cheap, for students, for freelancers, under 10 euro. Return comma-separated only.\"
-                }]
-              }]
-            }" \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY")
+            -d "$(jq -n --arg text 'Generate 5 high-intent SEO money keywords. Must be specific, low competition, and include words like best, free, cheap, for students, for freelancers, under 10 euro. Return comma-separated only.' '{
+              contents: [
+                {
+                  parts: [
+                    { text: $text }
+                  ]
+                }
+              ]
+            }')" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}")
 
           KEYWORDS=$(echo "$KEYWORD_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
@@ -54,61 +55,63 @@ jobs:
           fi
 
           KEYWORD=$(echo "$KEYWORDS" | cut -d',' -f1 | xargs)
-
           if [ -z "$KEYWORD" ]; then
             KEYWORD="best free ai tools for students"
           fi
 
           echo "Keyword: $KEYWORD"
 
-          # -----------------------------
-          # 2. Generate HTML page
-          # -----------------------------
           PAGE_RESPONSE=$(curl -s \
             -H "Content-Type: application/json" \
-            -d "{
-              \"contents\": [{
-                \"parts\": [{
-                  \"text\": \"Return ONLY valid HTML. No markdown. Create an SEO blog post about: '$KEYWORD'. Include headings, tips, and a section called 'Recommended Tools'.\"
-                }]
-              }]
-            }" \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY")
+            -d "$(jq -n --arg text "Return ONLY valid HTML. No markdown. Create an SEO blog post about: '$KEYWORD'. Include headings, tips, and a section called 'Recommended Tools'." '{
+              contents: [
+                {
+                  parts: [
+                    { text: $text }
+                  ]
+                }
+              ]
+            }')" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}")
 
           HTML=$(echo "$PAGE_RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
 
           if [ -z "$HTML" ]; then
-            HTML="<!DOCTYPE html><html><body><h1>Generation failed</h1><p>$KEYWORD</p></body></html>"
+            HTML='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Generation failed</title></head><body><h1>Generation failed</h1><p>Fallback page</p></body></html>'
           fi
 
-          echo "$HTML" > page$NEXT/index.html
+          printf '%s\n' "$HTML" > "page${NEXT}/index.html"
 
-          # -----------------------------
-          # 3. Generate INDEX.HTML
-          # -----------------------------
           echo "Building index.html..."
-
-          echo "<!DOCTYPE html>
-<html>
-<head>
-  <meta charset='UTF-8'>
-  <title>AI SEO Blog</title>
-</head>
-<body>
-  <h1>AI Generated SEO Pages</h1>
-  <p>Automatically generated content hub</p>
-  <ul>" > index.html
+          cat > index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>AI SEO Blog</title>
+          </head>
+          <body>
+            <h1>AI Generated SEO Pages</h1>
+            <p>Automatically generated content hub</p>
+            <ul>
+          EOF
 
           for dir in page*; do
             if [ -d "$dir" ]; then
-              TITLE=$(grep -o '<title>[^<]*' $dir/index.html 2>/dev/null | head -1 | sed 's/<title>//' || echo $dir)
-              echo "<li><a href=\"$dir/\">$TITLE</a></li>" >> index.html
+              TITLE=$(grep -o '<title>[^<]*' "$dir/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)
+              if [ -z "$TITLE" ]; then
+                TITLE="$dir"
+              fi
+              echo "              <li><a href=\"$dir/\">$TITLE</a></li>" >> index.html
             fi
           done
 
-          echo "</ul>
-</body>
-</html>" >> index.html
+          cat >> index.html <<'EOF'
+            </ul>
+          </body>
+          </html>
+          EOF
 
       - name: Commit and push
         run: |

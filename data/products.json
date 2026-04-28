@@ -1,11 +1,6 @@
 {
   "products": [
     {
-      "name": "Logitech MX Master 3S Wireless Mouse",
-      "link": "https://www.amazon.nl/dp/B09VHT6T74?tag=tim2103-20&linkCode=ogi",
-      "desc": "The gold standard for productivity mice, featuring silent clicks and an 8K DPI sensor."
-    },
-    {
       "name": "SteelSeries Arctis Nova 7 Wireless",
       "link": "https://www.amazon.nl/dp/B0B7X827S8?tag=tim2103-20&linkCode=ogi",
       "desc": "Premium gaming headset with multi-platform support and simultaneous Bluetooth."

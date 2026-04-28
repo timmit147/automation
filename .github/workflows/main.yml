@@ -33,61 +33,108 @@ jobs:
 
           echo "Product: $NAME"
 
-          # remove used product
+          # Remove used product
           jq 'del(.products[0])' data/products.json > tmp.json
           mv tmp.json data/products.json
 
-          # page number
-          NEXT=$(find . -maxdepth 1 -type d -name "page*" | sed 's|./page||' | sort -n | tail -n 1)
-          if [ -z "$NEXT" ]; then NEXT=1; else NEXT=$((NEXT + 1)); fi
+          # Generate slug for filename
+          SLUG=$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+          OUTPUT_FILE="${SLUG}.html"
 
-          mkdir -p "page$NEXT"
+          echo "Output file: $OUTPUT_FILE"
 
-          # simple prompt (NO HERE DOCS → avoids YAML breakage)
-          PROMPT="Write ONLY HTML. No markdown.
+          # Build prompt safely using jq to handle all escaping
+          PROMPT="You are a professional web developer and copywriter. Generate a complete, self-contained HTML page for an affiliate product review. Return ONLY valid HTML — no markdown, no code fences, no explanation.
 
-          Product: $NAME
+          Product name: $NAME
           Affiliate link: $LINK
 
-          Create SEO review page with:
-          - title
-          - H1
-          - overview
-          - pros and cons
-          - FAQ
-          - CTA button linking to affiliate link"
+          Requirements:
+          - Complete HTML5 document with DOCTYPE
+          - All CSS must be inline in a <style> tag in the <head>
+          - Clean, modern design: white background, max-width 860px centered, good typography
+          - Use a sans-serif font stack (system-ui, -apple-system, Arial)
+          - Color scheme: dark navy headings (#1a2340), blue CTA buttons (#2563eb), light gray accents
+          - Sections required (in order):
+            1. A sticky top navigation bar with the product name as the brand
+            2. Hero section: large H1 with the product name, a short punchy subtitle, and a prominent CTA button
+            3. Overview section: 3-4 paragraphs of genuine-sounding review content describing what the product is and who it is for
+            4. Key features: a 3-column icon grid (use unicode symbols as icons) listing 6 key features with short descriptions
+            5. Pros and cons: two-column layout, each item with a colored checkmark or cross prefix
+            6. Rating section: star rating visual (use unicode stars) with a score out of 5 and a one-sentence verdict
+            7. FAQ section: 5 questions and answers in an accordion-style (pure CSS, no JS required)
+            8. Final CTA section: dark background, large heading, subtext, and a button linking to the affiliate link
+          - The CTA buttons must link to: $LINK
+          - Add proper meta tags: charset, viewport, description, Open Graph title and description
+          - SEO: title tag should be '$NAME Review — Is It Worth It?', H1 matches, use semantic HTML
+          - The page must look hand-crafted and trustworthy, not like AI spam
+          - No external CSS frameworks, no external fonts, no JS required"
+
+          # Use jq to safely encode the prompt as a JSON string and build the full payload
+          PAYLOAD=$(jq -n --arg prompt "$PROMPT" \
+            '{"contents":[{"parts":[{"text":$prompt}]}],"generationConfig":{"temperature":0.7}}')
 
           RESPONSE=$(curl -s -X POST \
             -H "Content-Type: application/json" \
             -H "x-goog-api-key: $GEMINI_API_KEY" \
-            -d "{\"contents\":[{\"parts\":[{\"text\":\"$PROMPT\"}]}]}" \
+            -d "$PAYLOAD" \
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
 
-          HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+          echo "API response received"
+
+          # Extract HTML and strip any markdown fences Gemini might add anyway
+          HTML=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' | sed '/^```/d')
 
           if [ -z "$HTML" ]; then
-            HTML="<!DOCTYPE html><html><head><title>$NAME</title></head><body><h1>$NAME</h1><a href='$LINK'>Buy</a></body></html>"
+            echo "WARNING: Empty response from Gemini, using fallback"
+            HTML="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>$NAME</title></head><body><h1>$NAME</h1><a href='$LINK'>View on Amazon</a></body></html>"
           fi
 
-          echo "$HTML" > "page$NEXT/index.html"
+          echo "$HTML" > "$OUTPUT_FILE"
+          echo "Page written to $OUTPUT_FILE"
 
-          # rebuild index
-          echo "<h1>Affiliate Pages</h1><ul>" > index.html
+          # Rebuild index.html
+          echo "<!DOCTYPE html>
+          <html lang='en'>
+          <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1'>
+            <title>Affiliate Reviews</title>
+            <style>
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body { font-family: system-ui, -apple-system, Arial, sans-serif; background: #f8f9fa; color: #1a2340; }
+              header { background: #1a2340; color: white; padding: 1.5rem 2rem; }
+              header h1 { font-size: 1.5rem; }
+              main { max-width: 900px; margin: 3rem auto; padding: 0 1.5rem; }
+              h2 { font-size: 1.1rem; margin-bottom: 1.5rem; color: #555; font-weight: 400; }
+              ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+              li a { display: block; background: white; border-radius: 10px; padding: 1.25rem 1.5rem; text-decoration: none; color: #1a2340; font-weight: 600; border: 1px solid #e5e7eb; transition: box-shadow .2s; }
+              li a:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+              li a span { display: block; font-size: .8rem; color: #2563eb; font-weight: 400; margin-top: .25rem; }
+            </style>
+          </head>
+          <body>
+            <header><h1>Affiliate Reviews</h1></header>
+            <main>
+              <h2>All product reviews</h2>
+              <ul>" > index.html
 
-          for d in page*; do
-            if [ -d "$d" ]; then
-              TITLE=$(grep -o '<title>[^<]*' "$d/index.html" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)
-              [ -z "$TITLE" ] && TITLE="$d"
-              echo "<li><a href='$d/'>$TITLE</a></li>" >> index.html
-            fi
+          for f in *.html; do
+            [ "$f" = "index.html" ] && continue
+            TITLE=$(grep -o '<title>[^<]*' "$f" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)
+            [ -z "$TITLE" ] && TITLE="${f%.html}"
+            echo "              <li><a href='$f'>$TITLE<span>Read review →</span></a></li>" >> index.html
           done
 
-          echo "</ul>" >> index.html
+          echo "            </ul>
+            </main>
+          </body>
+          </html>" >> index.html
 
       - name: Commit changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Generate affiliate page" || echo "No changes"
+          git commit -m "Add affiliate page: $(date +%Y-%m-%d)" || echo "No changes"
           git push

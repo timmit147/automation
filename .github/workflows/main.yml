@@ -1,4 +1,4 @@
-name: Generate file every 10 minutes
+name: Generate pages every 10 minutes
 
 on:
   schedule:
@@ -16,15 +16,40 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Create file
+      - name: Create new page folder with index.html
         run: |
-          mkdir -p output
-          echo "Generated at $(date)" > output/file.txt
+          # Get latest page number
+          LAST_PAGE=$(ls -d page* 2>/dev/null | sed 's/page//' | sort -n | tail -n 1)
+
+          # Start at 1 if none exist
+          if [ -z "$LAST_PAGE" ]; then
+            NEXT_PAGE=1
+          else
+            NEXT_PAGE=$((LAST_PAGE + 1))
+          fi
+
+          echo "Creating page$NEXT_PAGE"
+
+          mkdir -p page$NEXT_PAGE
+
+          cat <<EOF > page$NEXT_PAGE/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Page $NEXT_PAGE</title>
+          </head>
+          <body>
+            <h1>This is page $NEXT_PAGE</h1>
+            <p>Generated at $(date)</p>
+          </body>
+          </html>
+          EOF
 
       - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add output/file.txt
-          git commit -m "Auto update file" || echo "No changes"
-          git push
+          git add .
+          git commit -m "Add page $(date)" || echo "No changes to commit"
+          git push origin HEAD:main

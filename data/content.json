@@ -1,0 +1,63 @@
+```json
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Laptop Pro X",
+      "price": 1200.00,
+      "description": "High-performance laptop for professionals.",
+      "category": "Electronics"
+    },
+    {
+      "id": 2,
+      "name": "Ergonomic Office Chair",
+      "price": 350.00,
+      "description": "Comfortable and supportive chair for long work hours.",
+      "category": "Furniture"
+    },
+    {
+      "id": 3,
+      "name": "Mechanical Keyboard",
+      "price": 150.00,
+      "description": "Durable keyboard with tactile keys for enhanced typing.",
+      "category": "Electronics"
+    },
+    {
+      "id": 4,
+      "name": "Noise-Cancelling Headphones",
+      "price": 200.00,
+      "description": "Immersive audio experience with superior noise cancellation.",
+      "category": "Electronics"
+    },
+    {
+      "id": 5,
+      "name": "Standing Desk Converter",
+      "price": 250.00,
+      "description": "Adjustable desk to switch between sitting and standing.",
+      "category": "Furniture"
+    }
+  ],
+  "pages": [
+    {
+      "id": 101,
+      "title": "Homepage",
+      "content": "Welcome to our online store! Discover amazing products and deals."
+    },
+    {
+      "id": 102,
+      "title": "About Us",
+      "content": "We are a dedicated team passionate about bringing you the best products."
+    },
+    {
+      "id": 103,
+      "title": "Contact Us",
+      "content": "Get in touch with our support team for any inquiries."
+    },
+    {
+      "id": 104,
+      "title": "FAQ",
+      "content": "Frequently asked questions about our products and services."
+    }
+  ]
+}
+```

@@ -1,44 +1,54 @@
 {
   "products": [
     {
-      "name": "Logitech G435 LIGHTSPEED & Bluetooth Wireless Gaming Headset",
-      "link": "https://www.amazon.nl/dp/B07W7LNTM5?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B07W7LNTM5._AC_SL1500_.jpg"
+      "name": "Logitech G502 Hero Gaming Mouse",
+      "link": "https://www.amazon.nl/dp/B07GS6ZB7T?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/61mpMH5TzkL._AC_SL1500_.jpg"
     },
     {
-      "name": "Logitech Pebble Keys 2 K380s Multi-Device Bluetooth Keyboard",
-      "link": "https://www.amazon.nl/dp/B07W7JLVCP?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B07W7JLVCP._AC_SL1500_.jpg"
+      "name": "Razer Viper V3 HyperSpeed Wireless Mouse",
+      "link": "https://www.amazon.nl/dp/B0CBCPB2T1?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/71c5U9M4oAL._AC_SL1500_.jpg"
     },
     {
-      "name": "UGREEN Revodok Pro 210 USB C Docking Station",
-      "link": "https://www.amazon.nl/dp/B0BXDQS4BD?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B0BXDQS4BD._AC_SL1500_.jpg"
+      "name": "Apple AirPods Pro 2",
+      "link": "https://www.amazon.nl/dp/B0BDHWDR12?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SL1500_.jpg"
     },
     {
-      "name": "UGREEN USB C Extension 10Gbps USB 3.2 Cable",
-      "link": "https://www.amazon.nl/dp/B08BBXMPWZ?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B08BBXMPWZ._AC_SL1500_.jpg"
+      "name": "Samsung Galaxy Buds2 Pro",
+      "link": "https://www.amazon.nl/dp/B0B8TC6KWF?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/61H6L6zR1sL._AC_SL1500_.jpg"
     },
     {
-      "name": "UGREEN USB C to DisplayPort 1.4 Cable",
-      "link": "https://www.amazon.nl/dp/B0C4DB8MLL?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B0C4DB8MLL._AC_SL1500_.jpg"
+      "name": "Anker 20000mAh Power Bank",
+      "link": "https://www.amazon.nl/dp/B0BWJ87T9P?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/71vV2q+6KPL._AC_SL1500_.jpg"
     },
     {
-      "name": "Anker Nano Powerbank 10000 mAh",
-      "link": "https://www.amazon.nl/dp/B0C9CJKCH3?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B0C9CJKCH3._AC_SL1500_.jpg"
+      "name": "Sony WH-1000XM5 Headphones",
+      "link": "https://www.amazon.nl/dp/B09XS7JWHH?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/61+btxzpfDL._AC_SL1500_.jpg"
     },
     {
-      "name": "Lucide RAMZI Table Lamp",
-      "link": "https://www.amazon.nl/dp/B07B4BNH1N?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B07B4BNH1N._AC_SL1500_.jpg"
+      "name": "Logitech MX Master 3S Mouse",
+      "link": "https://www.amazon.nl/dp/B09HM94VDS?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/61ni3t1ryQL._AC_SL1500_.jpg"
     },
     {
-      "name": "UGREEN Nexode Wireless Powerbank 10000mAh",
-      "link": "https://www.amazon.nl/dp/B0D4PHB2Z9?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B0D4PHB2Z9._AC_SL1500_.jpg"
+      "name": "Kindle Paperwhite 11th Gen",
+      "link": "https://www.amazon.nl/dp/B08N36XNTT?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/61aX7G9bWkL._AC_SL1500_.jpg"
+    },
+    {
+      "name": "ASUS TUF Gaming Monitor 27 inch",
+      "link": "https://www.amazon.nl/dp/B0886Z31WF?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/81QpkIctqPL._AC_SL1500_.jpg"
+    },
+    {
+      "name": "SteelSeries Apex Pro Keyboard",
+      "link": "https://www.amazon.nl/dp/B07SVJJCP3?tag=tim2103-20",
+      "image": "https://m.media-amazon.com/images/I/71L9+Kc6MAL._AC_SL1500_.jpg"
     }
   ]
 }

@@ -1,11 +1,6 @@
 {
   "products": [
     {
-      "name": "Logitech G502 Hero High Performance Wired Gaming Mouse",
-      "link": "https://www.amazon.nl/dp/B07GS6ZB7T?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B07GS6ZB7T._AC_SL1500_.jpg"
-    },
-    {
       "name": "Logitech G435 LIGHTSPEED & Bluetooth Wireless Gaming Headset",
       "link": "https://www.amazon.nl/dp/B07W7LNTM5?tag=tim2103-20&linkCode=ogi",
       "image_url": "https://m.media-amazon.com/images/I/B07W7LNTM5._AC_SL1500_.jpg"

@@ -33,31 +33,31 @@ jobs:
 
           call_gemini() {
             local payload="$1"
-            local response=""
-            local attempt=1
-            local max_attempts=5
+            local response_file
+            local http_code
 
-            while [ "$attempt" -le "$max_attempts" ]; do
-              response="$(curl -sS -X POST \
-                -H "Content-Type: application/json" \
-                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-                -d "$payload" \
-                "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" || true)"
+            response_file="$(mktemp)"
 
-              echo "Gemini attempt $attempt raw response:"
-              echo "$response"
+            http_code="$(curl -sS \
+              -o "$response_file" \
+              -w '%{http_code}' \
+              -X POST \
+              -H "Content-Type: application/json" \
+              -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+              -d "$payload" \
+              "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" || true)"
 
-              if [ -n "$response" ] && echo "$response" | jq -e '.candidates[0].content.parts[0].text' >/dev/null 2>&1; then
-                printf '%s' "$response"
-                return 0
-              fi
+            echo "Gemini HTTP code: $http_code"
 
-              sleep $((attempt * 2))
-              attempt=$((attempt + 1))
-            done
+            if [ "$http_code" != "200" ]; then
+              echo "ERROR: Gemini request failed"
+              cat "$response_file"
+              rm -f "$response_file"
+              return 1
+            fi
 
-            printf '%s' "$response"
-            return 1
+            cat "$response_file"
+            rm -f "$response_file"
           }
 
           if [ ! -f data/products.json ]; then
@@ -123,7 +123,7 @@ jobs:
             "" \
             "The page must feel unique to this product, not generic." \
             "Make it visually polished, trustworthy, and mobile friendly." \
-            "Use inline CSS inside a <style> tag." \
+            "Use inline CSS inside a style tag." \
             "Return only HTML.")"
 
           PAYLOAD="$(jq -n --arg prompt "$PROMPT" '{
@@ -143,21 +143,28 @@ jobs:
 
           RESPONSE="$(call_gemini "$PAYLOAD")"
 
-          HTML="$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' | sed '/^```/d')"
+          echo "RAW GEMINI RESPONSE:"
+          echo "$RESPONSE"
+
+          if ! printf '%s' "$RESPONSE" | jq -e . >/dev/null 2>&1; then
+            echo "ERROR: Gemini did not return valid JSON"
+            printf '%s\n' "$RESPONSE"
+            exit 1
+          fi
+
+          HTML="$(printf '%s' "$RESPONSE" | jq -er '.candidates[0].content.parts[0].text // empty' | sed '/^```/d')"
 
           if [ -z "$HTML" ]; then
-            echo "ERROR: Gemini returned no usable HTML after retries"
+            echo "ERROR: Gemini returned no usable HTML"
             exit 1
           fi
 
           echo "$HTML" > "$OUTPUT_FILE"
           echo "Page written to $OUTPUT_FILE"
 
-          # Remove the used product only after success
           jq 'del(.products[0])' data/products.json > data/products.tmp.json
           mv data/products.tmp.json data/products.json
 
-          # Rebuild index.html
           {
             echo "<!DOCTYPE html>"
             echo "<html lang='en'>"

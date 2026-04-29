@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GEMINI_MODEL: gemini-2.5-flash
+      GEMINI_MODEL: gemini-2.5-flash-lite
       SITE_BASE: https://timmit147.github.io/automation
 
     steps:
@@ -30,6 +30,35 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -euo pipefail
+
+          call_gemini() {
+            local payload="$1"
+            local response=""
+            local attempt=1
+            local max_attempts=5
+
+            while [ "$attempt" -le "$max_attempts" ]; do
+              response="$(curl -sS -X POST \
+                -H "Content-Type: application/json" \
+                -H "x-goog-api-key: ${GEMINI_API_KEY}" \
+                -d "$payload" \
+                "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" || true)"
+
+              echo "Gemini attempt $attempt raw response:"
+              echo "$response"
+
+              if [ -n "$response" ] && echo "$response" | jq -e '.candidates[0].content.parts[0].text' >/dev/null 2>&1; then
+                printf '%s' "$response"
+                return 0
+              fi
+
+              sleep $((attempt * 2))
+              attempt=$((attempt + 1))
+            done
+
+            printf '%s' "$response"
+            return 1
+          }
 
           if [ ! -f data/products.json ]; then
             echo "ERROR: data/products.json not found"
@@ -112,28 +141,23 @@ jobs:
             }
           }')"
 
-          RESPONSE="$(curl -sS -X POST \
-            -H "Content-Type: application/json" \
-            -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-            -d "$PAYLOAD" \
-            "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent")"
-
-          echo "RAW GEMINI RESPONSE:"
-          echo "$RESPONSE"
+          RESPONSE="$(call_gemini "$PAYLOAD")"
 
           HTML="$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' | sed '/^```/d')"
 
           if [ -z "$HTML" ]; then
-            echo "ERROR: Gemini returned no usable HTML"
+            echo "ERROR: Gemini returned no usable HTML after retries"
             exit 1
           fi
 
           echo "$HTML" > "$OUTPUT_FILE"
           echo "Page written to $OUTPUT_FILE"
 
+          # Remove the used product only after success
           jq 'del(.products[0])' data/products.json > data/products.tmp.json
           mv data/products.tmp.json data/products.json
 
+          # Rebuild index.html
           {
             echo "<!DOCTYPE html>"
             echo "<html lang='en'>"

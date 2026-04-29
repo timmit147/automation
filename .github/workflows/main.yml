@@ -32,14 +32,14 @@ jobs:
           set -euo pipefail
 
           if [ ! -f data/products.json ]; then
-            echo "data/products.json not found"
+            echo "ERROR: data/products.json not found"
             exit 1
           fi
 
           COUNT="$(jq '.products | length' data/products.json)"
           if [ "$COUNT" -le 0 ]; then
-            echo "No products left in data/products.json"
-            exit 0
+            echo "ERROR: No products left in data/products.json"
+            exit 1
           fi
 
           PRODUCT="$(jq -c '.products[0]' data/products.json)"
@@ -48,12 +48,12 @@ jobs:
           IMAGE="$(echo "$PRODUCT" | jq -r '.image // empty')"
 
           if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
-            echo "Invalid product name"
+            echo "ERROR: Invalid product name"
             exit 1
           fi
 
           if [ -z "$LINK" ] || [ "$LINK" = "null" ]; then
-            echo "Invalid product link"
+            echo "ERROR: Invalid product link"
             exit 1
           fi
 
@@ -61,84 +61,45 @@ jobs:
             IMAGE="https://via.placeholder.com/1200x1200?text=Product+Image"
           fi
 
-          echo "Processing: $NAME"
+          echo "Processing product: $NAME"
 
-          # Remove the used product from the queue
-          jq 'del(.products[0])' data/products.json > data/products.tmp.json
-          mv data/products.tmp.json data/products.json
-
-          # Create slugged filename
           SLUG="$(echo "$NAME" \
             | tr '[:upper:]' '[:lower:]' \
             | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//')"
           OUTPUT_FILE="${SLUG}.html"
 
-          PROMPT="You are an expert affiliate marketer, UX designer, and SEO copywriter.
+          PROMPT=$(cat <<EOF
+Return ONLY a complete HTML5 document.
+No markdown.
+No code fences.
+No explanation.
 
-          Create a HIGH-CONVERTING, visually rich, fully responsive HTML5 product review page.
+Product name: $NAME
+Affiliate link: $LINK
+Image URL: $IMAGE
 
-          IMPORTANT:
-          - Return ONLY raw HTML
-          - No markdown
-          - No explanation
-          - No code fences
-          - Output must be a COMPLETE HTML DOCUMENT
-          - Minimum length: around 1500 words
-          - Make it feel human-written, premium, and trustworthy
-          - Make the page look different based on the product type
-          - Use the provided product image prominently at the top
+Write a full, professional product review page with:
+- title tag
+- meta description
+- Open Graph tags
+- sticky top bar
+- hero section with image
+- subtitle
+- overview
+- who it is for
+- benefits
+- features
+- pros and cons
+- FAQ
+- final verdict
+- 3 CTA buttons
 
-          PRODUCT:
-          Name: ${NAME}
-          Affiliate Link: ${LINK}
-          Image URL: ${IMAGE}
-
-          REQUIREMENTS:
-
-          SEO:
-          - Title tag: '${NAME} Review — Is It Worth It?'
-          - Meta description
-          - Open Graph title, description, and image
-          - Proper semantic headings (H1, H2, H3)
-          - Clear keyword focus based on the product name
-
-          DESIGN:
-          - Modern UI with personality
-          - Use gradients, shadows, spacing
-          - Fully responsive
-          - Max width about 900px centered
-          - Sticky top navigation bar
-          - Strong visual hierarchy
-          - Make it feel hand-crafted, not generic
-
-          STRUCTURE:
-          1. Sticky top bar with brand / product name
-          2. Hero section with large product image, title, subtitle, and CTA button
-          3. Hook / intro
-          4. What the product is
-          5. Who it is for
-          6. Benefits
-          7. Features grid
-          8. Pros and cons
-          9. Real-life use cases
-          10. Comparison or alternatives section
-          11. FAQ with 5 questions and answers
-          12. Final verdict
-          13. Final CTA section
-
-          CONVERSION:
-          - Add 3 CTA buttons total: top, middle, bottom
-          - Link every CTA button to: ${LINK}
-          - Make the content persuasive but honest
-          - Encourage the reader to click through naturally
-
-          VISUAL:
-          - Use the product image at the top
-          - Reuse the image once more inside the page if helpful
-          - Add nice buttons
-          - Make it look professional on mobile and desktop
-
-          Return only HTML."
+The page must feel unique to this product, not generic.
+Make it visually polished, trustworthy, and mobile friendly.
+Use inline CSS inside a <style> tag.
+Return only HTML.
+EOF
+)
 
           PAYLOAD="$(jq -n --arg prompt "$PROMPT" '{
             contents: [
@@ -149,7 +110,9 @@ jobs:
               }
             ],
             generationConfig: {
-              temperature: 0.8
+              temperature: 0.3,
+              topP: 0.9,
+              maxOutputTokens: 8192
             }
           }')"
 
@@ -159,15 +122,22 @@ jobs:
             -d "$PAYLOAD" \
             "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent")"
 
+          echo "RAW GEMINI RESPONSE:"
+          echo "$RESPONSE"
+
           HTML="$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' | sed '/^```/d')"
 
           if [ -z "$HTML" ]; then
-            echo "WARNING: Empty Gemini response, using fallback"
-            HTML="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>${NAME}</title><meta name='viewport' content='width=device-width, initial-scale=1'></head><body><h1>${NAME}</h1><img src='${IMAGE}' alt='${NAME}' style='max-width:100%;height:auto;'><p><a href='${LINK}' target='_blank' rel='sponsored nofollow'>Buy on Amazon</a></p></body></html>"
+            echo "ERROR: Gemini returned no usable HTML"
+            exit 1
           fi
 
           echo "$HTML" > "$OUTPUT_FILE"
           echo "Page written to $OUTPUT_FILE"
+
+          # Remove the used product only after success
+          jq 'del(.products[0])' data/products.json > data/products.tmp.json
+          mv data/products.tmp.json data/products.json
 
           # Rebuild index.html
           {
@@ -231,7 +201,6 @@ jobs:
             echo "</html>"
           } >> index.html
 
-          # Basic SEO files
           echo "User-agent: *" > robots.txt
           echo "Allow: /" >> robots.txt
           echo "" >> robots.txt

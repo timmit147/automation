@@ -1,11 +1,6 @@
 {
   "products": [
     {
-      "name": "Logitech MX Master 3S Mouse",
-      "link": "https://www.amazon.nl/dp/B09HM94VDS?tag=tim2103-20",
-      "image": "https://m.media-amazon.com/images/I/61ni3t1ryQL._AC_SL1500_.jpg"
-    },
-    {
       "name": "Kindle Paperwhite 11th Gen",
       "link": "https://www.amazon.nl/dp/B08N36XNTT?tag=tim2103-20",
       "image": "https://m.media-amazon.com/images/I/61aX7G9bWkL._AC_SL1500_.jpg"

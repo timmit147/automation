@@ -1,8 +1,8 @@
-name: Affiliate Page Generator
+name: AI SEO Site Builder
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0 6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -21,240 +21,148 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install jq
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Generate affiliate page
+      # -------------------------
+      # BOOTSTRAP
+      # -------------------------
+      - name: Setup data file
+        run: |
+          mkdir -p data
+          if [ ! -f data/content.json ]; then
+            echo '{"niche":"gaming-mice","products":[],"pages":[]}' > data/content.json
+          fi
+
+      # -------------------------
+      # GENERATE JSON
+      # -------------------------
+      - name: Generate AI JSON
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -euo pipefail
 
-          call_gemini() {
-            local payload="$1"
-            local response_file
-            local http_code
+          PROMPT="Return ONLY JSON.
 
-            response_file="$(mktemp)"
+Rules:
+- No markdown
+- No fake products
+- Max 8 products
+- Max 10 pages
 
-            http_code="$(curl -sS \
-              -o "$response_file" \
-              -w '%{http_code}' \
-              -X POST \
+Schema:
+{
+  \"niche\": \"gaming-mice\",
+  \"products\": [
+    {
+      \"id\": \"string\",
+      \"name\": \"string\",
+      \"price\": \"string\",
+      \"weight\": \"string\",
+      \"type\": \"wired or wireless\",
+      \"best_for\": [\"string\"]
+    }
+  ],
+  \"pages\": [
+    {
+      \"slug\": \"string\",
+      \"type\": \"best|vs|review\",
+      \"product_ids\": [\"id\"]
+    }
+  ]
+}"
+
+          RESPONSE=$(curl -sS -X POST \
+            -H "Content-Type: application/json" \
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            -d "$(jq -n --arg text "$PROMPT" '{contents:[{parts:[{text:$text}]}]}')" \
+            "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent")
+
+          echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' > data/content.json
+
+      # -------------------------
+      # BUILD PAGES
+      # -------------------------
+      - name: Generate pages
+        run: |
+          set -euo pipefail
+
+          DATA="$(cat data/content.json)"
+
+          echo "$DATA" | jq -c '.pages[]' | while read page; do
+            SLUG=$(echo "$page" | jq -r '.slug')
+            TYPE=$(echo "$page" | jq -r '.type')
+
+            IDS=$(echo "$page" | jq -r '.product_ids[]')
+
+            PRODUCTS=$(echo "$DATA" | jq --argjson ids "$(echo "$IDS" | jq -R . | jq -s .)" '
+              .products | map(select(.id as $id | $ids | index($id)))
+            ')
+
+            PROMPT="Write SEO affiliate HTML page.
+
+TYPE: $TYPE
+PRODUCTS: $PRODUCTS
+
+Rules:
+- No hallucinations
+- Only provided data
+- No markdown
+- Include pros/cons
+- Include FAQ
+Return ONLY HTML."
+
+            RESPONSE=$(curl -sS -X POST \
               -H "Content-Type: application/json" \
-              -H "x-goog-api-key: ${GEMINI_API_KEY}" \
-              -d "$payload" \
-              "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" || true)"
+              -H "x-goog-api-key: $GEMINI_API_KEY" \
+              -d "$(jq -n --arg text "$PROMPT" '{contents:[{parts:[{text:$text}]}]}')" \
+              "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent")
 
-            echo "Gemini HTTP code: $http_code" >&2
+            echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' > "${SLUG}.html"
+          done
 
-            if [ "$http_code" != "200" ]; then
-              echo "ERROR: Gemini request failed" >&2
-              cat "$response_file" >&2
-              rm -f "$response_file"
-              return 1
-            fi
-
-            cat "$response_file"
-            rm -f "$response_file"
-          }
-
-          if [ ! -f data/products.json ]; then
-            echo "ERROR: data/products.json not found" >&2
-            exit 1
-          fi
-
-          COUNT="$(jq '.products | length' data/products.json)"
-          if [ "$COUNT" -le 0 ]; then
-            echo "ERROR: No products left in data/products.json" >&2
-            exit 1
-          fi
-
-          PRODUCT="$(jq -c '.products[0]' data/products.json)"
-          NAME="$(echo "$PRODUCT" | jq -r '.name')"
-          LINK="$(echo "$PRODUCT" | jq -r '.link')"
-          IMAGE="$(echo "$PRODUCT" | jq -r '.image // empty')"
-
-          if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
-            echo "ERROR: Invalid product name" >&2
-            exit 1
-          fi
-
-          if [ -z "$LINK" ] || [ "$LINK" = "null" ]; then
-            echo "ERROR: Invalid product link" >&2
-            exit 1
-          fi
-
-          if [ -z "$IMAGE" ] || [ "$IMAGE" = "null" ]; then
-            IMAGE="https://via.placeholder.com/1200x1200?text=Product+Image"
-          fi
-
-          echo "Processing product: $NAME"
-
-          SLUG="$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//')"
-          OUTPUT_FILE="${SLUG}.html"
-
-          PROMPT="$(printf '%s\n' \
-            "Return ONLY a complete HTML5 document." \
-            "No markdown." \
-            "No code fences." \
-            "No explanation." \
-            "No square-bracket links." \
-            "No markdown links." \
-            "Do not invent or change any URLs." \
-            "" \
-            "Product name EXACTLY: ${NAME}" \
-            "Affiliate link EXACTLY: ${LINK}" \
-            "Image URL EXACTLY: ${IMAGE}" \
-            "" \
-            "Write a full, professional product review page with:" \
-            "- title tag" \
-            "- meta description" \
-            "- Open Graph tags" \
-            "- sticky top bar" \
-            "- hero section with the exact image URL" \
-            "- subtitle" \
-            "- overview" \
-            "- who it is for" \
-            "- benefits" \
-            "- features" \
-            "- pros and cons" \
-            "- FAQ" \
-            "- final verdict" \
-            "- 3 CTA buttons" \
-            "" \
-            "The page must feel unique to this product, not generic." \
-            "Make it visually polished, trustworthy, and mobile friendly." \
-            "Use inline CSS inside a style tag." \
-            "Use only the exact URLs provided." \
-            "Return only HTML.")"
-
-          PAYLOAD="$(jq -n --arg prompt "$PROMPT" '{
-            contents: [
-              {
-                parts: [
-                  { text: $prompt }
-                ]
-              }
-            ],
-            generationConfig: {
-              temperature: 0.2,
-              topP: 0.9,
-              maxOutputTokens: 8192
-            }
-          }')"
-
-          RESPONSE="$(call_gemini "$PAYLOAD")"
-
-          echo "RAW GEMINI RESPONSE:" >&2
-          echo "$RESPONSE" >&2
-
-          if ! printf '%s' "$RESPONSE" | jq -e . >/dev/null 2>&1; then
-            echo "ERROR: Gemini did not return valid JSON" >&2
-            exit 1
-          fi
-
-          HTML="$(printf '%s' "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' | sed '/^```/d')"
-
-          if [ -z "$HTML" ]; then
-            echo "ERROR: Gemini returned no usable HTML" >&2
-            exit 1
-          fi
-
-          # Remove markdown-style links if Gemini still sneaks them in
-          HTML="$(printf '%s' "$HTML" | sed -E 's/([^]]+)([^)]+)/\2/g')"
-
-          echo "$HTML" > "$OUTPUT_FILE"
-          echo "Page written to $OUTPUT_FILE"
-
-          jq 'del(.products[0])' data/products.json > data/products.tmp.json
-          mv data/products.tmp.json data/products.json
-
+      # -------------------------
+      # INDEX
+      # -------------------------
+      - name: Build index
+        run: |
           {
-            echo "<!DOCTYPE html>"
-            echo "<html lang='en'>"
-            echo "<head>"
-            echo "  <meta charset='UTF-8'>"
-            echo "  <meta name='viewport' content='width=device-width, initial-scale=1'>"
-            echo "  <title>Affiliate Reviews</title>"
-            echo "  <meta name='description' content='Automatically generated affiliate review pages.'>"
-            echo "  <style>"
-            echo "    * { box-sizing: border-box; margin: 0; padding: 0; }"
-            echo "    body { font-family: system-ui, -apple-system, Arial, sans-serif; background: #f8fafc; color: #0f172a; }"
-            echo "    header { background: linear-gradient(135deg, #0f172a, #2563eb); color: #fff; padding: 2rem 1.5rem; }"
-            echo "    header .wrap, main { max-width: 1100px; margin: 0 auto; }"
-            echo "    header h1 { font-size: 2rem; letter-spacing: -.03em; }"
-            echo "    header p { margin-top: .5rem; color: rgba(255,255,255,.88); max-width: 70ch; line-height: 1.6; }"
-            echo "    main { padding: 28px 1.5rem 60px; }"
-            echo "    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }"
-            echo "    .card { display: block; text-decoration: none; color: inherit; background: #fff; border: 1px solid rgba(148,163,184,.18); border-radius: 22px; padding: 18px; box-shadow: 0 16px 50px rgba(15,23,42,.06); transition: transform .2s ease, box-shadow .2s ease; }"
-            echo "    .card:hover { transform: translateY(-2px); box-shadow: 0 20px 60px rgba(15,23,42,.10); }"
-            echo "    .card strong { display: block; font-size: 1.05rem; line-height: 1.35; margin-bottom: 8px; }"
-            echo "    .card span { color: #475569; display: block; font-size: .95rem; line-height: 1.5; }"
-            echo "    .card em { display: block; margin-top: 16px; color: #2563eb; font-style: normal; font-weight: 700; }"
-            echo "    footer { text-align: center; color: #64748b; padding: 10px 20px 40px; }"
-            echo "  </style>"
-            echo "</head>"
-            echo "<body>"
-            echo "  <header>"
-            echo "    <div class='wrap'>"
-            echo "      <h1>Affiliate Reviews</h1>"
-            echo "      <p>Professional product pages generated automatically. Each page includes SEO copy, product images, and clear affiliate calls to action.</p>"
-            echo "    </div>"
-            echo "  </header>"
-            echo "  <main>"
-            echo "    <div class='grid'>"
+            echo "<html><body><h1>Affiliate Hub</h1>"
           } > index.html
 
           for f in *.html; do
             [ "$f" = "index.html" ] && continue
-            TITLE="$(grep -o '<title>[^<]*' "$f" 2>/dev/null | head -n 1 | sed 's/<title>//' || true)"
-            [ -z "$TITLE" ] && TITLE="${f%.html}"
-            DESC="$(grep -o '<meta name="description" content="[^"]*"' "$f" 2>/dev/null | head -n 1 | sed 's/<meta name="description" content="//; s/"$//' || true)"
-            [ -z "$DESC" ] && DESC="Read the review."
-            {
-              echo "      <a class='card' href='$f'>"
-              echo "        <strong>$TITLE</strong>"
-              echo "        <span>$DESC</span>"
-              echo "        <em>Read review →</em>"
-              echo "      </a>"
-            } >> index.html
+            echo "<a href='$f'>$f</a><br>" >> index.html
           done
 
-          {
-            echo "    </div>"
-            echo "  </main>"
-            echo "  <footer>"
-            echo "    <p>As an Amazon Associate I earn from qualifying purchases.</p>"
-            echo "  </footer>"
-            echo "</body>"
-            echo "</html>"
-          } >> index.html
+          echo "</body></html>" >> index.html
 
-          echo "User-agent: *" > robots.txt
-          echo "Allow: /" >> robots.txt
-          echo "" >> robots.txt
-          echo "Sitemap: ${SITE_BASE}/sitemap.xml" >> robots.txt
-
+      # -------------------------
+      # SITEMAP
+      # -------------------------
+      - name: Sitemap
+        run: |
           {
-            echo "<?xml version='1.0' encoding='UTF-8'?>"
-            echo "<urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>"
-            echo "  <url><loc>${SITE_BASE}/index.html</loc></url>"
-            echo "  <url><loc>${SITE_BASE}/</loc></url>"
+            echo "<?xml version='1.0'?>"
+            echo "<urlset>"
+            echo "<url><loc>${SITE_BASE}/</loc></url>"
+            echo "<url><loc>${SITE_BASE}/index.html</loc></url>"
+
             for f in *.html; do
               [ "$f" = "index.html" ] && continue
-              echo "  <url><loc>${SITE_BASE}/${f}</loc></url>"
+              echo "<url><loc>${SITE_BASE}/${f}</loc></url>"
             done
+
             echo "</urlset>"
           } > sitemap.xml
 
-          touch .nojekyll
-
-      - name: Commit changes
+      # -------------------------
+      # COMMIT
+      # -------------------------
+      - name: Commit
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add -A
-          git commit -m "Add affiliate page: $(date +%Y-%m-%d)" || echo "No changes"
-          git push origin HEAD:main
+          git commit -m "AI SEO update $(date +%Y-%m-%d)" || echo "No changes"
+          git push

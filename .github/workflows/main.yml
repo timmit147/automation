@@ -63,43 +63,39 @@ jobs:
 
           echo "Processing product: $NAME"
 
-          SLUG="$(echo "$NAME" \
-            | tr '[:upper:]' '[:lower:]' \
-            | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//')"
+          SLUG="$(echo "$NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//')"
           OUTPUT_FILE="${SLUG}.html"
 
-          PROMPT=$(cat <<EOF
-Return ONLY a complete HTML5 document.
-No markdown.
-No code fences.
-No explanation.
-
-Product name: $NAME
-Affiliate link: $LINK
-Image URL: $IMAGE
-
-Write a full, professional product review page with:
-- title tag
-- meta description
-- Open Graph tags
-- sticky top bar
-- hero section with image
-- subtitle
-- overview
-- who it is for
-- benefits
-- features
-- pros and cons
-- FAQ
-- final verdict
-- 3 CTA buttons
-
-The page must feel unique to this product, not generic.
-Make it visually polished, trustworthy, and mobile friendly.
-Use inline CSS inside a <style> tag.
-Return only HTML.
-EOF
-)
+          PROMPT="$(printf '%s\n' \
+            "Return ONLY a complete HTML5 document." \
+            "No markdown." \
+            "No code fences." \
+            "No explanation." \
+            "" \
+            "Product name: ${NAME}" \
+            "Affiliate link: ${LINK}" \
+            "Image URL: ${IMAGE}" \
+            "" \
+            "Write a full, professional product review page with:" \
+            "- title tag" \
+            "- meta description" \
+            "- Open Graph tags" \
+            "- sticky top bar" \
+            "- hero section with image" \
+            "- subtitle" \
+            "- overview" \
+            "- who it is for" \
+            "- benefits" \
+            "- features" \
+            "- pros and cons" \
+            "- FAQ" \
+            "- final verdict" \
+            "- 3 CTA buttons" \
+            "" \
+            "The page must feel unique to this product, not generic." \
+            "Make it visually polished, trustworthy, and mobile friendly." \
+            "Use inline CSS inside a <style> tag." \
+            "Return only HTML.")"
 
           PAYLOAD="$(jq -n --arg prompt "$PROMPT" '{
             contents: [
@@ -135,11 +131,9 @@ EOF
           echo "$HTML" > "$OUTPUT_FILE"
           echo "Page written to $OUTPUT_FILE"
 
-          # Remove the used product only after success
           jq 'del(.products[0])' data/products.json > data/products.tmp.json
           mv data/products.tmp.json data/products.json
 
-          # Rebuild index.html
           {
             echo "<!DOCTYPE html>"
             echo "<html lang='en'>"

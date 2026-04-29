@@ -1,9 +1,9 @@
 name: AI SEO Site Builder
 
 on:
-  workflow_dispatch:
   schedule:
     - cron: "0 6 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,23 +17,62 @@ jobs:
       SITE_BASE: https://timmit147.github.io/automation
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Setup data
+      # -------------------------
+      # BOOTSTRAP
+      # -------------------------
+      - name: Setup data file
         run: |
           mkdir -p data
-          echo '{"niche":"gaming-mice","products":[],"pages":[]}' > data/content.json
+          if [ ! -f data/content.json ]; then
+            echo '{"niche":"gaming-mice","products":[],"pages":[]}' > data/content.json
+          fi
 
-      - name: Generate AI JSON
+      # -------------------------
+      # GENERATE JSON
+      # -------------------------
+      - name: Generate AI content.json
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          PROMPT="Return ONLY JSON with products and pages. No markdown."
+          set -euo pipefail
 
-          RESPONSE=$(curl -sS \
+          PROMPT="Return ONLY valid JSON.
+
+Rules:
+- No markdown
+- No fake products
+- Max 8 products
+- Max 10 pages
+
+Schema:
+{
+  \"niche\": \"gaming-mice\",
+  \"products\": [
+    {
+      \"id\": \"string\",
+      \"name\": \"string\",
+      \"price\": \"string\",
+      \"weight\": \"string\",
+      \"type\": \"wired or wireless\",
+      \"best_for\": [\"string\"]
+    }
+  ],
+  \"pages\": [
+    {
+      \"slug\": \"string\",
+      \"type\": \"best|vs|review\",
+      \"product_ids\": [\"id\"]
+    }
+  ]
+}"
+
+          RESPONSE=$(curl -sS -X POST \
             -H "Content-Type: application/json" \
             -H "x-goog-api-key: $GEMINI_API_KEY" \
             -d "$(jq -n --arg text "$PROMPT" '{contents:[{parts:[{text:$text}]}]}')" \
@@ -41,26 +80,53 @@ jobs:
 
           echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' > data/content.json
 
-      - name: Generate pages
+      # -------------------------
+      # GENERATE HTML PAGES
+      # -------------------------
+      - name: Generate HTML pages
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          set -euo pipefail
+
           DATA=$(cat data/content.json)
 
-          echo "$DATA" | jq -c '.pages[]' | while read page; do
+          echo "$DATA" | jq -c '.pages[]' | while read -r page; do
+
             SLUG=$(echo "$page" | jq -r '.slug')
+            TYPE=$(echo "$page" | jq -r '.type')
 
-            PROMPT="Write a simple HTML product page. Return ONLY HTML."
+            IDS=$(echo "$page" | jq -r '.product_ids[]')
 
-            RESPONSE=$(curl -sS \
+            PRODUCTS=$(echo "$DATA" | jq --argjson ids "$(echo "$IDS" | jq -R . | jq -s .)" '
+              .products | map(select(.id as $id | $ids | index($id)))
+            ')
+
+            PROMPT="Write a full SEO affiliate HTML page.
+
+Type: $TYPE
+Products: $PRODUCTS
+
+Rules:
+- Return ONLY HTML
+- No markdown
+- No explanations
+- Include: hero, features, pros/cons, FAQ, CTA
+- Make it natural and product-specific"
+
+            RESPONSE=$(curl -sS -X POST \
               -H "Content-Type: application/json" \
               -H "x-goog-api-key: $GEMINI_API_KEY" \
               -d "$(jq -n --arg text "$PROMPT" '{contents:[{parts:[{text:$text}]}]}')" \
               "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent")
 
             echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text' > "${SLUG}.html"
+
           done
 
+      # -------------------------
+      # INDEX PAGE
+      # -------------------------
       - name: Build index
         run: |
           echo "<html><body><h1>Affiliate Hub</h1>" > index.html
@@ -72,10 +138,32 @@ jobs:
 
           echo "</body></html>" >> index.html
 
-      - name: Commit
+      # -------------------------
+      # SITEMAP
+      # -------------------------
+      - name: Build sitemap
+        run: |
+          echo "<?xml version='1.0'?>" > sitemap.xml
+          echo "<urlset>" >> sitemap.xml
+
+          echo "<url><loc>${SITE_BASE}/</loc></url>" >> sitemap.xml
+          echo "<url><loc>${SITE_BASE}/index.html</loc></url>" >> sitemap.xml
+
+          for f in *.html; do
+            [ "$f" = "index.html" ] && continue
+            echo "<url><loc>${SITE_BASE}/${f}</loc></url>" >> sitemap.xml
+          done
+
+          echo "</urlset>" >> sitemap.xml
+
+      # -------------------------
+      # COMMIT
+      # -------------------------
+      - name: Commit changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
           git add -A
-          git commit -m "update" || echo "no changes"
+          git commit -m "AI SEO update $(date +%Y-%m-%d)" || echo "No changes"
           git push

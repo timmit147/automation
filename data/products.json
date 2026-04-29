@@ -1,11 +1,6 @@
 {
   "products": [
     {
-      "name": "Razer Viper V3 HyperSpeed",
-      "link": "https://www.amazon.nl/dp/B0CBCPB2T1?tag=tim2103-20&linkCode=ogi",
-      "image_url": "https://m.media-amazon.com/images/I/B0CBCPB2T1._AC_SL1500_.jpg"
-    },
-    {
       "name": "Logitech G502 Hero High Performance Wired Gaming Mouse",
       "link": "https://www.amazon.nl/dp/B07GS6ZB7T?tag=tim2103-20&linkCode=ogi",
       "image_url": "https://m.media-amazon.com/images/I/B07GS6ZB7T._AC_SL1500_.jpg"

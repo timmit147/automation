@@ -47,11 +47,11 @@ jobs:
               -d "$payload" \
               "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" || true)"
 
-            echo "Gemini HTTP code: $http_code"
+            echo "Gemini HTTP code: $http_code" >&2
 
             if [ "$http_code" != "200" ]; then
-              echo "ERROR: Gemini request failed"
-              cat "$response_file"
+              echo "ERROR: Gemini request failed" >&2
+              cat "$response_file" >&2
               rm -f "$response_file"
               return 1
             fi
@@ -61,13 +61,13 @@ jobs:
           }
 
           if [ ! -f data/products.json ]; then
-            echo "ERROR: data/products.json not found"
+            echo "ERROR: data/products.json not found" >&2
             exit 1
           fi
 
           COUNT="$(jq '.products | length' data/products.json)"
           if [ "$COUNT" -le 0 ]; then
-            echo "ERROR: No products left in data/products.json"
+            echo "ERROR: No products left in data/products.json" >&2
             exit 1
           fi
 
@@ -77,12 +77,12 @@ jobs:
           IMAGE="$(echo "$PRODUCT" | jq -r '.image // empty')"
 
           if [ -z "$NAME" ] || [ "$NAME" = "null" ]; then
-            echo "ERROR: Invalid product name"
+            echo "ERROR: Invalid product name" >&2
             exit 1
           fi
 
           if [ -z "$LINK" ] || [ "$LINK" = "null" ]; then
-            echo "ERROR: Invalid product link"
+            echo "ERROR: Invalid product link" >&2
             exit 1
           fi
 
@@ -100,17 +100,20 @@ jobs:
             "No markdown." \
             "No code fences." \
             "No explanation." \
+            "No square-bracket links." \
+            "No markdown links." \
+            "Do not invent or change any URLs." \
             "" \
-            "Product name: ${NAME}" \
-            "Affiliate link: ${LINK}" \
-            "Image URL: ${IMAGE}" \
+            "Product name EXACTLY: ${NAME}" \
+            "Affiliate link EXACTLY: ${LINK}" \
+            "Image URL EXACTLY: ${IMAGE}" \
             "" \
             "Write a full, professional product review page with:" \
             "- title tag" \
             "- meta description" \
             "- Open Graph tags" \
             "- sticky top bar" \
-            "- hero section with image" \
+            "- hero section with the exact image URL" \
             "- subtitle" \
             "- overview" \
             "- who it is for" \
@@ -124,6 +127,7 @@ jobs:
             "The page must feel unique to this product, not generic." \
             "Make it visually polished, trustworthy, and mobile friendly." \
             "Use inline CSS inside a style tag." \
+            "Use only the exact URLs provided." \
             "Return only HTML.")"
 
           PAYLOAD="$(jq -n --arg prompt "$PROMPT" '{
@@ -135,7 +139,7 @@ jobs:
               }
             ],
             generationConfig: {
-              temperature: 0.3,
+              temperature: 0.2,
               topP: 0.9,
               maxOutputTokens: 8192
             }
@@ -143,21 +147,23 @@ jobs:
 
           RESPONSE="$(call_gemini "$PAYLOAD")"
 
-          echo "RAW GEMINI RESPONSE:"
-          echo "$RESPONSE"
+          echo "RAW GEMINI RESPONSE:" >&2
+          echo "$RESPONSE" >&2
 
           if ! printf '%s' "$RESPONSE" | jq -e . >/dev/null 2>&1; then
-            echo "ERROR: Gemini did not return valid JSON"
-            printf '%s\n' "$RESPONSE"
+            echo "ERROR: Gemini did not return valid JSON" >&2
             exit 1
           fi
 
-          HTML="$(printf '%s' "$RESPONSE" | jq -er '.candidates[0].content.parts[0].text // empty' | sed '/^```/d')"
+          HTML="$(printf '%s' "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty' | sed '/^```/d')"
 
           if [ -z "$HTML" ]; then
-            echo "ERROR: Gemini returned no usable HTML"
+            echo "ERROR: Gemini returned no usable HTML" >&2
             exit 1
           fi
+
+          # Remove markdown-style links if Gemini still sneaks them in
+          HTML="$(printf '%s' "$HTML" | sed -E 's/([^]]+)([^)]+)/\2/g')"
 
           echo "$HTML" > "$OUTPUT_FILE"
           echo "Page written to $OUTPUT_FILE"

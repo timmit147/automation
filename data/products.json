@@ -1,11 +1,6 @@
 {
   "products": [
     {
-      "name": "Apple AirPods Pro 2",
-      "link": "https://www.amazon.nl/dp/B0BDHWDR12?tag=tim2103-20",
-      "image": "https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SL1500_.jpg"
-    },
-    {
       "name": "Samsung Galaxy Buds2 Pro",
       "link": "https://www.amazon.nl/dp/B0B8TC6KWF?tag=tim2103-20",
       "image": "https://m.media-amazon.com/images/I/61H6L6zR1sL._AC_SL1500_.jpg"
